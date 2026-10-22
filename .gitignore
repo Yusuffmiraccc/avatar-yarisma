@@ -1,0 +1,65 @@
+# Environment files and local secrets
+.env
+.env.*
+!.env.example
+secrets/
+**/secrets/
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+
+# Android and Gradle generated/local files
+.gradle/
+**/.gradle/
+local.properties
+**/local.properties
+**/build/
+*.iml
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/usage.statistics.xml
+.idea/shelf/
+
+# Node.js dependencies and generated output
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+coverage/
+**/coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Python virtual environments, caches, and temporary output
+.venv/
+venv/
+env/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# Go build outputs
+*.exe
+*.test
+*.out
+
+# IDE and operating system files
+.vscode/*.log
+.vscode/.browse.*.json
+.vscode/sftp.json
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
