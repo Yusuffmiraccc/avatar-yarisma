@@ -1,0 +1,39 @@
+name: avatar
+
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: avatar_db
+      MYSQL_USER: avatar
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-change-me-local-only}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change-root-local-only}
+    ports:
+      - "3307:3306"
+    volumes:
+      - avatar_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-change-root-local-only}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: mysql+pymysql://avatar:${MYSQL_PASSWORD:-change-me-local-only}@mysql:3306/avatar_db?charset=utf8mb4
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-local-dev-secret-change-me-0123456789abcdef}
+      ML_DIR: /srv/ml_artifacts
+    ports:
+      - "8000:8000"
+    volumes:
+      - avatar_ml:/srv/ml_artifacts
+
+volumes:
+  avatar_mysql_data:
+  avatar_ml:

@@ -1,0 +1,11 @@
+﻿workflow_id,topic,endpoint_family,status,evidence_or_gap
+WF-01,Waste separate from stock-tracked outputs,POST /api/v1/butchering-orders/{order_id}/outputs; POST /api/v1/butchering-orders/{order_id}/waste-records; butchering complete,SOURCE_SUPPORTED_PARTIAL,Waste is separate record; no stock lot or stock IN from waste; full DTO/schema remains open
+WF-02,Production input stock-consumption timing,Production inputs and complete endpoint family,OPEN,Must verify exact point of stock decrement and rollback behavior
+WF-03,Shipment dispatch owns stock OUT,Shipment dispatch; sales create,APPROVED_BASE_RULE,Dispatch creates the single shipment OUT; sale itself does not create stock OUT
+WF-04,Balance/ledger transaction and concurrency,Stock movements/balances; sales; production/butchering completion,OPEN_RUNTIME,Transaction and locking/negative-stock tests not runtime verified
+WF-05,Recall activation consistency,Recall activation endpoint family,SOURCE_SUPPORTED_PARTIAL,Synchronous/atomic base decision recorded; runtime behavior not verified
+WF-06,Recall resolution versus lot release,Recall resolve and lot release/unblock action if defined,OPEN,"Exact endpoint, role, state and transition parity still needs evidence"
+WF-07,Butchering weight variance and reason,Butchering outputs/waste/complete,SOURCE_SUPPORTED_PARTIAL,Canonical kg and zero default tolerance approved; endpoint-level variance/explanation behavior open
+WF-08,Correction/reversal of completed operations,Production/butchering correction/cancel endpoints if defined,OPEN,Exact reverse-entry API and data model need verification
+WF-09,Idempotency for retry-prone critical POST,"Receipt, production/butchering completion, sales",OPEN_PARTIAL,Sales requirement approved; scope for other critical POSTs must be endpoint-specific
+WF-10,Canonical final entity states,"Production, shipment, recall, butchering, prediction",OPEN_PARTIAL,Some state rules exist; complete enum/transition/API/DTO/DB parity not proven

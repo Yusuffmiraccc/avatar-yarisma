@@ -1,24 +1,27 @@
-# AVATAR Yarışması — Hedef Mimari
+# AVATAR — Hedef Mimari
 
-Bu belge, mevcut proje gereksinimlerine göre hedeflenen bileşenleri ve aralarındaki sınırları açıklar. Aşağıdaki mimari plan niteliğindedir; bileşenlerin henüz uygulandığı anlamına gelmez.
+Geçerli kararlar için `docs/SOZLESME.md` esas alınır. Ayrıntılar `docs/handoff/` altındadır.
 
 ## Bileşenler
 
-- **Android uygulaması (Kotlin):** Yarışmacıların mobil istemcisi. Ağ bağlantısının kesildiği durumlarda gerekli yerel verileri saklamak ve çevrimdışı çalışmayı desteklemek için yerel SQLite veritabanı kullanması hedeflenir. Çevrimiçi olduğunda merkezi API ile eşitlenir.
-- **REST API (Go):** Android ve web istemcilerinin merkezi sistemle iletişim kuracağı servis katmanı. İstekleri doğrular, iş kurallarını uygular ve merkezi veritabanına erişimi yönetir.
-- **Merkezi veritabanı (MySQL):** Sunucu tarafındaki kalıcı ve ortak proje verilerinin tutulacağı veri katmanı. Şema ve migration yaklaşımı daha sonra belirlenecektir.
-- **Web arayüzü (React):** Yarışma yönetimi ve ilgili web iş akışları için tarayıcı tabanlı istemci. Sunucu verilerine REST API üzerinden erişir.
-- **AI/ML bileşenleri (Python):** Projenin gereksinimleriyle belirlenecek yapay zekâ veya makine öğrenmesi işlevlerini barındırır. API ile nasıl bütünleşeceği ve model/veri yaşam döngüsü ayrıca tasarlanacaktır.
-- **Testler (`tests/`):** Servisler ve istemciler arasındaki davranışı kapsayan entegrasyon testleri ile kullanıcı ve sistem gereksinimlerini doğrulayan kabul testleri burada planlanır.
+- **Android (`android/`):** Kotlin, Jetpack Compose, Room/SQLite, Retrofit. Online-first: satış backend onayı olmadan tamamlanmaz. SQLite ürün/lot önbelleği ve oturum durumunu tutar. Çevrimdışı satış kuyruğu kapsam dışıdır (ADR-001).
+- **Backend (`backend/`):** Python, FastAPI, SQLAlchemy 2.x, Alembic, PyMySQL. REST `/api/v1`, OpenAPI. İş kuralları servis katmanında, transaction sınırı servis katmanında.
+- **Merkezi veritabanı (MySQL 8.4):** Tek doğruluk kaynağı. Şema Alembic ile yönetilir.
+- **Web (`web/`):** React, TypeScript, Vite. Yönetim ve raporlama.
+- **AI/ML (`backend/app/ml`):** scikit-learn ile üretim verimi/EKP ve parçalama verimi tahmini. Backend içinde modül; hata durumunda operasyonel akışlar etkilenmez.
+- **Testler (`tests/`, `backend/tests`):** birim, entegrasyon, kontrat, eşzamanlılık ve uçtan uca demo.
+
+## SQLite–MySQL tutarlılığı
+
+MySQL tek doğruluk kaynağıdır. Android SQLite'ı yalnızca önbellek olarak kullanır: oturum açınca ürün/lot listesi çekilir, her satış öncesi backend stok ve recall durumunu yeniden doğrular. Satış `Idempotency-Key` ile gönderilir; tekrar gönderim çift stok hareketi üretmez. Bu sayede çevrimdışı çakışma yönetimi gerekmez.
 
 ## Veri akışı
 
-Android ve React web istemcilerinin merkezi işlevler için Go REST API'ye istek göndermesi hedeflenir. API, doğrulama ve iş kurallarından sonra gerekli merkezi verileri MySQL'den okur veya yazar. Android'in çevrimdışı kullanım için tuttuğu SQLite verileri çevrimiçi bağlantı kurulduğunda API aracılığıyla eşitlenir. Python AI/ML işlevlerinin veri alıp sonuçları sisteme sunma yolu, ilgili kullanım senaryoları netleşince API sınırları içinde tasarlanır.
+Android ve web yalnızca REST API ile konuşur. API doğrulama, yetki ve iş kurallarını uygular; stok defteri (`stock_movements`) ve bakiye (`inventory_balances`) aynı transaction'da güncellenir. Lot izleme ve geri çağırma kesin kayıt ilişkilerine dayanır; AI tahmini bunların kaynağı değildir.
 
 ## Güvenlik sınırları
 
-- İstemciler MySQL'e doğrudan bağlanmaz; merkezi veriye erişim API üzerinden yapılır.
-- API, kimlik doğrulama, yetkilendirme, girdi doğrulama ve iş kuralı kontrollerinin merkezi noktası olarak tasarlanır. Kullanılacak kimlik doğrulama yöntemi henüz belirlenmemiştir.
-- Gizli anahtarlar ve ortam özelindeki değerler sürüm kontrolüne alınmaz; `.env.example` yalnızca daha sonra kesinleşecek değişkenler için açıklama taşır.
-- Android'deki yerel SQLite verisi cihaz sınırında tutulur. Hassas yerel verilerin korunma ve eşitleme kuralları ilgili gereksinimler netleştiğinde tanımlanmalıdır.
-- AI/ML bileşeninin API ve veri erişimi, yalnızca gerekli girdiler ve yetkilerle sınırlandırılmalıdır.
+- İstemciler MySQL'e bağlanmaz.
+- JWT: access 15 dk, refresh 7 gün rotation; roller `ADMIN`, `OPERATOR`, `SALES`, `TRACEABILITY_MANAGER`, `VIEWER`; deny-by-default izin kontrolü.
+- Gizli değerler yalnız yerel `.env` içinde; `.env.example` yer tutucu taşır.
+- Android token'ı Keystore ile korunur.

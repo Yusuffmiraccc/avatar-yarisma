@@ -1,0 +1,599 @@
+{
+  "manifest_version": "1.36",
+  "source_documents": {
+    "api_contract": "volumes/volume-01-3-api-contracts.md",
+    "permission_matrix": "volumes/volume-01-9-endpoint-permissions-security-decisions.md",
+    "erd": "volumes/volume-01-2-erd-and-data-schema.md",
+    "workflows": "volumes/volume-01-5-workflows-state-machines.md",
+    "workflow_registry": "volumes/volume-01-19-canonical-workflow-ids-state-registry.md"
+  },
+  "method_path_extraction": {
+    "method": "Static regex extraction from Markdown; not a runtime OpenAPI inspection",
+    "api_unique_signatures": 57,
+    "permission_doc_unique_signatures": 56,
+    "api_only": [
+      {
+        "method": "POST",
+        "path": "/api/v1/butchering-orders/{order_id}/waste-records"
+      }
+    ],
+    "permission_only": [],
+    "matched_signatures": [
+      {
+        "method": "GET",
+        "path": "/api/v1/audit-events"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/auth/me"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/butchering-orders"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/butchering-orders/{order_id}"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/customers"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/inventory/balances"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/inventory/movements"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/lots"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/lots/by-code/{lot_code}"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/lots/{lot_id}"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/predictions/{prediction_id}"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/production-orders"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/production-orders/{order_id}"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/products"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/products/{product_id}"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/recalls"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/recalls/{recall_id}"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/sales"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/sales/{sale_id}"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/shipments"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/shipments/{shipment_id}"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/suppliers"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/traceability/lots/by-code/{lot_code}/summary"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/traceability/lots/{lot_id}/backward"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/traceability/lots/{lot_id}/forward"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/units"
+      },
+      {
+        "method": "GET",
+        "path": "/health/live"
+      },
+      {
+        "method": "GET",
+        "path": "/health/ready"
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/v1/products/{product_id}"
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/v1/recalls/{recall_id}/customer-impacts/{impact_id}"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/auth/login"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/auth/logout"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/butchering-orders"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/butchering-orders/{order_id}/complete"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/butchering-orders/{order_id}/inputs"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/butchering-orders/{order_id}/outputs"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/customers"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/inventory/adjustments"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/inventory/receipts"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/predictions/butchering-yield"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/predictions/production-yield"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/production-orders"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/production-orders/{order_id}/cancel"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/production-orders/{order_id}/complete"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/production-orders/{order_id}/inputs"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/production-orders/{order_id}/outputs"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/production-orders/{order_id}/service-costs"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/products"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/recalls"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/recalls/{recall_id}/activate"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/recalls/{recall_id}/close"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/sales"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/sales/{sale_id}/void"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/shipments"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/shipments/{shipment_id}/dispatch"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/suppliers"
+      }
+    ]
+  },
+  "permission_table_rows": [
+    {
+      "line": 44,
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "source_row": "| `POST /api/v1/auth/login` | PUB | — | Rate limit; genel kimlik bilgisi hatası; parola loglanmaz |"
+    },
+    {
+      "line": 45,
+      "method": "GET",
+      "path": "/api/v1/auth/me",
+      "source_row": "| `GET /api/v1/auth/me` | Evet | Tüm aktif roller / `auth:read_self` | Token subject aktif kullanıcıyla eşleşmeli |"
+    },
+    {
+      "line": 46,
+      "method": "POST",
+      "path": "/api/v1/auth/logout",
+      "source_row": "| `POST /api/v1/auth/logout` | Evet | Tüm aktif roller | Token-only logout ile server-side revoke ayrımı SEC-03 kararıyla netleşmeli |"
+    },
+    {
+      "line": 54,
+      "method": "GET",
+      "path": "/api/v1/products",
+      "source_row": "| `GET /api/v1/products` | Evet | `ALL` / `catalog:read` | Pasif ürünler filtreyle veya rol politikasına göre görünür |"
+    },
+    {
+      "line": 55,
+      "method": "POST",
+      "path": "/api/v1/products",
+      "source_row": "| `POST /api/v1/products` | Evet | `A` / `catalog:manage` | `code` unique; geçmiş işlemler değiştirilmez |"
+    },
+    {
+      "line": 56,
+      "method": "GET",
+      "path": "/api/v1/products/{product_id}",
+      "source_row": "| `GET /api/v1/products/{product_id}` | Evet | `ALL` / `catalog:read` | Kaynak kapsamı kontrolü |"
+    },
+    {
+      "line": 57,
+      "method": "PATCH",
+      "path": "/api/v1/products/{product_id}",
+      "source_row": "| `PATCH /api/v1/products/{product_id}` | Evet | `A` / `catalog:manage` | Sadece izin verilen alanlar |"
+    },
+    {
+      "line": 58,
+      "method": "GET",
+      "path": "/api/v1/units",
+      "source_row": "| `GET /api/v1/units` | Evet | `ALL` / `catalog:read` | Sözlük okuma |"
+    },
+    {
+      "line": 59,
+      "method": "GET",
+      "path": "/api/v1/suppliers",
+      "source_row": "| `GET /api/v1/suppliers` | Evet | `A`, `O`, `T` / `catalog:read` | `SALES` ve `VIEWER` için erişim verilmesi ayrı ürün kararı |"
+    },
+    {
+      "line": 60,
+      "method": "POST",
+      "path": "/api/v1/suppliers",
+      "source_row": "| `POST /api/v1/suppliers` | Evet | `A` / `catalog:manage` | Unique/validasyon |"
+    },
+    {
+      "line": 61,
+      "method": "GET",
+      "path": "/api/v1/customers",
+      "source_row": "| `GET /api/v1/customers` | Evet | `A`, `O`, `S`, `T` / `catalog:read` | `VIEWER` erişimi Cilt 1.3'te net değil; varsayılan olarak yok |"
+    },
+    {
+      "line": 62,
+      "method": "POST",
+      "path": "/api/v1/customers",
+      "source_row": "| `POST /api/v1/customers` | Evet | `A` / `catalog:manage` | Audit |"
+    },
+    {
+      "line": 68,
+      "method": "GET",
+      "path": "/api/v1/lots",
+      "source_row": "| `GET /api/v1/lots` | Evet | `ALL` / `inventory:read` | Tedarikçi gibi alanlar gerekirse rol bazlı azaltılır |"
+    },
+    {
+      "line": 69,
+      "method": "GET",
+      "path": "/api/v1/lots/{lot_id}",
+      "source_row": "| `GET /api/v1/lots/{lot_id}` | Evet | `ALL` / `inventory:read` | Kaynak kapsamı kontrolü |"
+    },
+    {
+      "line": 70,
+      "method": "GET",
+      "path": "/api/v1/lots/by-code/{lot_code}",
+      "source_row": "| `GET /api/v1/lots/by-code/{lot_code}` | Evet | `ALL` / `inventory:read` | Lot kodu üzerinden aynı erişim politikası |"
+    },
+    {
+      "line": 71,
+      "method": "GET",
+      "path": "/api/v1/inventory/balances",
+      "source_row": "| `GET /api/v1/inventory/balances` | Evet | `ALL` / `inventory:read` | Güncel bakiye; audit kaynağı movement ledger |"
+    },
+    {
+      "line": 72,
+      "method": "GET",
+      "path": "/api/v1/inventory/movements",
+      "source_row": "| `GET /api/v1/inventory/movements` | Evet | `A`, `O`, `T`; `S` yalnızca kendi satış hareketleri / `inventory:read` veya kapsamlı satış okuma | Satış hareketlerinin scope filtresi backend'de uygulanır |"
+    },
+    {
+      "line": 73,
+      "method": "POST",
+      "path": "/api/v1/inventory/receipts",
+      "source_row": "| `POST /api/v1/inventory/receipts` | Evet | `A`, `O` / `inventory:receive` | Lot + IN movement + balance + audit tek transaction |"
+    },
+    {
+      "line": 74,
+      "method": "POST",
+      "path": "/api/v1/inventory/adjustments",
+      "source_row": "| `POST /api/v1/inventory/adjustments` | Evet | `A` / `inventory:adjust` | Onaylı: yalnızca ADMIN; gerekçe zorunlu |"
+    },
+    {
+      "line": 82,
+      "method": "POST",
+      "path": "/api/v1/production-orders",
+      "source_row": "| `POST /api/v1/production-orders` | Evet | `A`, `O` / `production:manage` | Taslak/plan oluşturur |"
+    },
+    {
+      "line": 83,
+      "method": "GET",
+      "path": "/api/v1/production-orders",
+      "source_row": "| `GET /api/v1/production-orders` | Evet | `A`, `O`, `T`, `V` / `production:read` | SALES varsayılan olarak yok |"
+    },
+    {
+      "line": 84,
+      "method": "GET",
+      "path": "/api/v1/production-orders/{order_id}",
+      "source_row": "| `GET /api/v1/production-orders/{order_id}` | Evet | `A`, `O`, `T`, `V` / `production:read` | Aynı kapsam kuralı |"
+    },
+    {
+      "line": 85,
+      "method": "POST",
+      "path": "/api/v1/production-orders/{order_id}/inputs",
+      "source_row": "| `POST /api/v1/production-orders/{order_id}/inputs` | Evet | `A`, `O` / `production:manage` | Lot kullanılabilirliği tamamlamada tekrar kontrol edilir |"
+    },
+    {
+      "line": 86,
+      "method": "POST",
+      "path": "/api/v1/production-orders/{order_id}/service-costs",
+      "source_row": "| `POST /api/v1/production-orders/{order_id}/service-costs` | Evet | `A`, `O` / `production:manage` | Maliyet girdisi audit edilir |"
+    },
+    {
+      "line": 87,
+      "method": "POST",
+      "path": "/api/v1/production-orders/{order_id}/outputs",
+      "source_row": "| `POST /api/v1/production-orders/{order_id}/outputs` | Evet | `A`, `O` / `production:manage` | Çıktı miktarı pozitif ve birim uyumlu |"
+    },
+    {
+      "line": 88,
+      "method": "POST",
+      "path": "/api/v1/production-orders/{order_id}/complete",
+      "source_row": "| `POST /api/v1/production-orders/{order_id}/complete` | Evet | `A`, `O` / `production:complete` | Stok, genealogy, maliyet ve durum atomik |"
+    },
+    {
+      "line": 89,
+      "method": "POST",
+      "path": "/api/v1/production-orders/{order_id}/cancel",
+      "source_row": "| `POST /api/v1/production-orders/{order_id}/cancel` | Evet | `A`, `O` / `production:manage` | Yalnızca iş etkisi oluşmadan; aksi halde düzeltme akışı |"
+    },
+    {
+      "line": 95,
+      "method": "POST",
+      "path": "/api/v1/butchering-orders",
+      "source_row": "| `POST /api/v1/butchering-orders` | Evet | `A`, `O` / `butchering:manage` | Girdi lotu ve maliyet temeli doğrulanır |"
+    },
+    {
+      "line": 96,
+      "method": "GET",
+      "path": "/api/v1/butchering-orders",
+      "source_row": "| `GET /api/v1/butchering-orders` | Evet | `A`, `O`, `T`, `V` / `butchering:read` | SALES varsayılan olarak yok |"
+    },
+    {
+      "line": 97,
+      "method": "GET",
+      "path": "/api/v1/butchering-orders/{order_id}",
+      "source_row": "| `GET /api/v1/butchering-orders/{order_id}` | Evet | `A`, `O`, `T`, `V` / `butchering:read` | Aynı kapsam kuralı |"
+    },
+    {
+      "line": 98,
+      "method": "POST",
+      "path": "/api/v1/butchering-orders/{order_id}/inputs",
+      "source_row": "| `POST /api/v1/butchering-orders/{order_id}/inputs` | Evet | `A`, `O` / `butchering:manage` | Girdi lotu blokaj ve miktar kontrolü |"
+    },
+    {
+      "line": 99,
+      "method": "POST",
+      "path": "/api/v1/butchering-orders/{order_id}/outputs",
+      "source_row": "| `POST /api/v1/butchering-orders/{order_id}/outputs` | Evet | `A`, `O` / `butchering:manage` | WF-01 fire nullability kararı uygulanmalı |"
+    },
+    {
+      "line": 100,
+      "method": "POST",
+      "path": "/api/v1/butchering-orders/{order_id}/complete",
+      "source_row": "| `POST /api/v1/butchering-orders/{order_id}/complete` | Evet | `A`, `O` / `butchering:complete` | Ağırlık dengesi, maliyet tahsisi ve stok etkileri atomik |"
+    },
+    {
+      "line": 106,
+      "method": "POST",
+      "path": "/api/v1/sales",
+      "source_row": "| `POST /api/v1/sales` | Evet | `A`, `S` / `sales:create` | `Idempotency-Key`, stok/lot blokajı, atomic ledger update |"
+    },
+    {
+      "line": 107,
+      "method": "GET",
+      "path": "/api/v1/sales",
+      "source_row": "| `GET /api/v1/sales` | Evet | `A`, `S`, `T`, `V` / `sales:read` | `T`/`V` erişimi kapsam ve alan minimizasyonuna tabi |"
+    },
+    {
+      "line": 108,
+      "method": "GET",
+      "path": "/api/v1/sales/{sale_id}",
+      "source_row": "| `GET /api/v1/sales/{sale_id}` | Evet | `A`, `S`, `T`, `V` / `sales:read` | Aynı kapsam kuralı |"
+    },
+    {
+      "line": 109,
+      "method": "POST",
+      "path": "/api/v1/sales/{sale_id}/void",
+      "source_row": "| `POST /api/v1/sales/{sale_id}/void` | Evet | `A` / `sales:correct` | Completed sale hard-delete edilmez; ters kayıt ve gerekçe |"
+    },
+    {
+      "line": 115,
+      "method": "POST",
+      "path": "/api/v1/shipments",
+      "source_row": "| `POST /api/v1/shipments` | Evet | `A`, `S` / `shipments:manage` | Onaylı: OPERATOR ve TRACEABILITY_MANAGER yazamaz |"
+    },
+    {
+      "line": 116,
+      "method": "POST",
+      "path": "/api/v1/shipments/{shipment_id}/dispatch",
+      "source_row": "| `POST /api/v1/shipments/{shipment_id}/dispatch` | Evet | `A`, `S` / `shipments:dispatch` | Onaylı WF-03: tek `OUT/SHIPMENT`; satış OUT üretmez |"
+    },
+    {
+      "line": 117,
+      "method": "GET",
+      "path": "/api/v1/shipments",
+      "source_row": "| `GET /api/v1/shipments` | Evet | `A`, `O`, `S`, `T`, `V` / `shipments:read` | Gerekli alanları role göre sınırla |"
+    },
+    {
+      "line": 118,
+      "method": "GET",
+      "path": "/api/v1/shipments/{shipment_id}",
+      "source_row": "| `GET /api/v1/shipments/{shipment_id}` | Evet | `A`, `O`, `S`, `T`, `V` / `shipments:read` | Aynı kapsam kuralı |"
+    },
+    {
+      "line": 124,
+      "method": "GET",
+      "path": "/api/v1/traceability/lots/{lot_id}/backward",
+      "source_row": "| `GET /api/v1/traceability/lots/{lot_id}/backward` | Evet | `ALL` / `traceability:read` | Miktarlı genealogy; olmayan bağlantı tahmin edilmez |"
+    },
+    {
+      "line": 125,
+      "method": "GET",
+      "path": "/api/v1/traceability/lots/{lot_id}/forward",
+      "source_row": "| `GET /api/v1/traceability/lots/{lot_id}/forward` | Evet | `ALL` / `traceability:read` | Kayıtlı müşteri/market bilgisi scope'a tabi |"
+    },
+    {
+      "line": 126,
+      "method": "GET",
+      "path": "/api/v1/traceability/lots/by-code/{lot_code}/summary",
+      "source_row": "| `GET /api/v1/traceability/lots/by-code/{lot_code}/summary` | Evet | `ALL` / `traceability:read` | Recall'a esas veri deterministik kayıtlar |"
+    },
+    {
+      "line": 127,
+      "method": "POST",
+      "path": "/api/v1/recalls",
+      "source_row": "| `POST /api/v1/recalls` | Evet | `A`, `T` / `recalls:manage` | Taslak oluşturma ve gerekçe |"
+    },
+    {
+      "line": 128,
+      "method": "POST",
+      "path": "/api/v1/recalls/{recall_id}/activate",
+      "source_row": "| `POST /api/v1/recalls/{recall_id}/activate` | Evet | `A`, `T` / `recalls:activate` | Lot blokajı ve audit; atomik/outbox kararı WF-05 |"
+    },
+    {
+      "line": 129,
+      "method": "GET",
+      "path": "/api/v1/recalls",
+      "source_row": "| `GET /api/v1/recalls` | Evet | `ALL` / `recalls:read` | Hassas müşteri alanları role göre sınırlanabilir |"
+    },
+    {
+      "line": 130,
+      "method": "GET",
+      "path": "/api/v1/recalls/{recall_id}",
+      "source_row": "| `GET /api/v1/recalls/{recall_id}` | Evet | `ALL` / `recalls:read` | Aynı kapsam kuralı |"
+    },
+    {
+      "line": 131,
+      "method": "POST",
+      "path": "/api/v1/recalls/{recall_id}/close",
+      "source_row": "| `POST /api/v1/recalls/{recall_id}/close` | Evet | `A`, `T` / `recalls:resolve` | Çözüm notu/aksiyonlar; blokaj otomatik kalkmaz |"
+    },
+    {
+      "line": 132,
+      "method": "PATCH",
+      "path": "/api/v1/recalls/{recall_id}/customer-impacts/{impact_id}",
+      "source_row": "| `PATCH /api/v1/recalls/{recall_id}/customer-impacts/{impact_id}` | Evet | `A`, `T` / `recalls:manage` | İletişim durumu ve audit |"
+    },
+    {
+      "line": 138,
+      "method": "POST",
+      "path": "/api/v1/predictions/production-yield",
+      "source_row": "| `POST /api/v1/predictions/production-yield` | Evet | `A`, `O`, `V` önerilir / `ai:predict` | Tahmin stok/maliyet kaydı oluşturmaz |"
+    },
+    {
+      "line": 139,
+      "method": "POST",
+      "path": "/api/v1/predictions/butchering-yield",
+      "source_row": "| `POST /api/v1/predictions/butchering-yield` | Evet | `A`, `O`, `V` önerilir / `ai:predict` | Tahmin gerçek ağırlık yerine geçmez |"
+    },
+    {
+      "line": 140,
+      "method": "GET",
+      "path": "/api/v1/predictions/{prediction_id}",
+      "source_row": "| `GET /api/v1/predictions/{prediction_id}` | Evet | `A`, `O`, `T`, `V` / `ai:metrics:read` veya prediction-read izni | Cilt 1.8 izin sözlüğüyle endpoint adı eşleştirilmeli |"
+    },
+    {
+      "line": 141,
+      "method": "GET",
+      "path": "/api/v1/audit-events",
+      "source_row": "| `GET /api/v1/audit-events` | Evet | `A`, `T` / `audit:read` | Hassas alanlar maskelenir; pagination zorunlu |"
+    },
+    {
+      "line": 142,
+      "method": "GET",
+      "path": "/health/live",
+      "source_row": "| `GET /health/live` | Hayır | Public minimal liveness | DB/host/secret bilgisi döndürmez |"
+    },
+    {
+      "line": 143,
+      "method": "GET",
+      "path": "/health/ready",
+      "source_row": "| `GET /health/ready` | Hayır | Public readiness; 200 hazır / 503 hazır değil | Secret/DB ayrıntısı döndürmez |"
+    }
+  ],
+  "gate": {
+    "migration_files_allowed": false,
+    "database_changes_allowed": false,
+    "reason": "Owner explicitly requires separate approval after checking Cilt 1.2 ERD and Cilt 1.5 WF-01..WF-10.",
+    "must_resolve_before_migration": [
+      "Cilt 1.2 complete table/column/FK/index/constraint inventory",
+      "Cilt 1.3 API endpoint vs Cilt 1.9 permission matrix exact parity",
+      "Cilt 1.4 DTO/response/error/status-code coverage for every endpoint",
+      "Cilt 1.5 WF-01..WF-10 states, transitions, side effects, stock/genealogy/audit/idempotency and test IDs",
+      "Approved enum/state mapping for every entity",
+      "Physical ORM/OpenAPI/MySQL runtime verification after separate authorization"
+    ]
+  }
+}

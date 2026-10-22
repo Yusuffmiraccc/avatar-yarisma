@@ -1,0 +1,680 @@
+{
+  "version": "1.39",
+  "source_file": "volumes/volume-01-2-erd-and-data-schema.md",
+  "markdown_table_count": 9,
+  "schema_section_count": 6,
+  "candidate_table_names_count": 34,
+  "candidate_table_register": [
+    {
+      "table_name_candidate": "audit_events",
+      "source_evidence_lines": [
+        365,
+        468
+      ],
+      "evidence_context": [
+        "### 11.1 `audit_events`",
+        "10. `audit_events`, `ml_predictions`"
+      ],
+      "mermaid_entity": false,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "CANDIDATE_TABLE_NAME_NEEDS_SOURCE_CONFIRMATION"
+    },
+    {
+      "table_name_candidate": "butchering_inputs",
+      "source_evidence_lines": [
+        262,
+        464
+      ],
+      "evidence_context": [
+        "### 7.2 `butchering_inputs`",
+        "6. `butchering_orders`, `butchering_inputs`, `butchering_outputs`, `butchering_waste_records`"
+      ],
+      "mermaid_entity": false,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "CANDIDATE_TABLE_NAME_NEEDS_SOURCE_CONFIRMATION"
+    },
+    {
+      "table_name_candidate": "butchering_orders",
+      "source_evidence_lines": [
+        258,
+        464
+      ],
+      "evidence_context": [
+        "### 7.1 `butchering_orders`",
+        "6. `butchering_orders`, `butchering_inputs`, `butchering_outputs`, `butchering_waste_records`"
+      ],
+      "mermaid_entity": true,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "MERMAID_ENTITY_ONLY_TABLE_SCHEMA_NOT_PROVEN"
+    },
+    {
+      "table_name_candidate": "butchering_outputs",
+      "source_evidence_lines": [
+        268,
+        464,
+        497,
+        528
+      ],
+      "evidence_context": [
+        "### 7.3 `butchering_outputs` — stokta izlenen çıktılar",
+        "6. `butchering_orders`, `butchering_inputs`, `butchering_outputs`, `butchering_waste_records`",
+        "- Fire ayrı `butchering_waste_records` tablosunda tutulur. `butchering_outputs` yalnızca `CUT` ve stokta izlenen `BYPRODUCT` içerir; bu tablodaki `product_id` ve `lot_id` zorunludur. Fire tablosu satılabilir stok/lot üre",
+        "- Fire, `butchering_waste_records` tablosunda tutulur; `butchering_outputs` içine fire satırı eklenmez."
+      ],
+      "mermaid_entity": false,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "CANDIDATE_TABLE_NAME_NEEDS_SOURCE_CONFIRMATION"
+    },
+    {
+      "table_name_candidate": "butchering_waste_records",
+      "source_evidence_lines": [
+        274,
+        464,
+        497,
+        528
+      ],
+      "evidence_context": [
+        "### 7.4 `butchering_waste_records` — fire ölçümleri ve maliyet uzlaştırması",
+        "6. `butchering_orders`, `butchering_inputs`, `butchering_outputs`, `butchering_waste_records`",
+        "- Fire ayrı `butchering_waste_records` tablosunda tutulur. `butchering_outputs` yalnızca `CUT` ve stokta izlenen `BYPRODUCT` içerir; bu tablodaki `product_id` ve `lot_id` zorunludur. Fire tablosu satılabilir stok/lot üre",
+        "- Fire, `butchering_waste_records` tablosunda tutulur; `butchering_outputs` içine fire satırı eklenmez."
+      ],
+      "mermaid_entity": false,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "CANDIDATE_TABLE_NAME_NEEDS_SOURCE_CONFIRMATION"
+    },
+    {
+      "table_name_candidate": "customers",
+      "source_evidence_lines": [
+        159,
+        461
+      ],
+      "evidence_context": [
+        "### 4.5 `customers`",
+        "3. `products`, `suppliers`, `customers`, `product_prices`"
+      ],
+      "mermaid_entity": true,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "MERMAID_ENTITY_ONLY_TABLE_SCHEMA_NOT_PROVEN"
+    },
+    {
+      "table_name_candidate": "idempotency_records",
+      "source_evidence_lines": [
+        339,
+        387,
+        466
+      ],
+      "evidence_context": [
+        "### 9.5 `idempotency_records`",
+        "- UNIQUE (`scope_key`, `idempotency_key`) in `idempotency_records`.",
+        "8. `sales`, `sale_lines`, `shipments`, `shipment_lines`, `idempotency_records`"
+      ],
+      "mermaid_entity": false,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "CANDIDATE_TABLE_NAME_NEEDS_SOURCE_CONFIRMATION"
+    },
+    {
+      "table_name_candidate": "inventory_balances",
+      "source_evidence_lines": [
+        96,
+        192,
+        383,
+        462,
+        475
+      ],
+      "evidence_context": [
+        "- `inventory_balances` bir lot için güncel merkezi bakiyeyi tutar; `stock_movements` denetlenebilir hareket geçmişidir.",
+        "### 5.2 `inventory_balances`",
+        "- UNIQUE (`lot_id`) in `inventory_balances`.",
+        "4. `lots`, `inventory_balances`, `stock_movements`, `lot_blocks`",
+        "- [ ] Her stokta bulunan lot için bir `inventory_balances` kaydı var."
+      ],
+      "mermaid_entity": false,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "CANDIDATE_TABLE_NAME_NEEDS_SOURCE_CONFIRMATION"
+    },
+    {
+      "table_name_candidate": "lot_blocks",
+      "source_evidence_lines": [
+        190,
+        224,
+        462
+      ],
+      "evidence_context": [
+        "**Kural:** `BLOCKED` kalıcı lot durumu değildir. Blokaj geçmişi `lot_blocks`/`recall_lots` üzerinden tutulur; lot aynı anda fiziksel stok taşıyabilir ve satışa kapalı olabilir.",
+        "### 5.4 `lot_blocks`",
+        "4. `lots`, `inventory_balances`, `stock_movements`, `lot_blocks`"
+      ],
+      "mermaid_entity": false,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "CANDIDATE_TABLE_NAME_NEEDS_SOURCE_CONFIRMATION"
+    },
+    {
+      "table_name_candidate": "lot_genealogy_edges",
+      "source_evidence_lines": [
+        94,
+        292,
+        465
+      ],
+      "evidence_context": [
+        "- `lot_genealogy_edges` üretim/parçalama/yeniden işleme için kaynak lot ile hedef lot arasında miktarlı, çoktan çoğa bağlantı tutar.",
+        "### 8.1 `lot_genealogy_edges`",
+        "7. `lot_genealogy_edges`"
+      ],
+      "mermaid_entity": false,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "CANDIDATE_TABLE_NAME_NEEDS_SOURCE_CONFIRMATION"
+    },
+    {
+      "table_name_candidate": "lots",
+      "source_evidence_lines": [
+        173,
+        435,
+        462
+      ],
+      "evidence_context": [
+        "### 5.1 `lots`",
+        "Bu örnek `production_inputs`, `production_service_costs`, `production_outputs`, `lots`, `stock_movements` ve maliyet hesaplama katmanını kapsar.",
+        "4. `lots`, `inventory_balances`, `stock_movements`, `lot_blocks`"
+      ],
+      "mermaid_entity": true,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "MERMAID_ENTITY_ONLY_TABLE_SCHEMA_NOT_PROVEN"
+    },
+    {
+      "table_name_candidate": "ml_predictions",
+      "source_evidence_lines": [
+        371,
+        468
+      ],
+      "evidence_context": [
+        "### 11.2 `ml_predictions`",
+        "10. `audit_events`, `ml_predictions`"
+      ],
+      "mermaid_entity": false,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "CANDIDATE_TABLE_NAME_NEEDS_SOURCE_CONFIRMATION"
+    },
+    {
+      "table_name_candidate": "prediction_records",
+      "source_evidence_lines": [],
+      "evidence_context": [],
+      "mermaid_entity": false,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "CANDIDATE_TABLE_NAME_NEEDS_SOURCE_CONFIRMATION"
+    },
+    {
+      "table_name_candidate": "product_prices",
+      "source_evidence_lines": [
+        163,
+        461
+      ],
+      "evidence_context": [
+        "### 4.6 `product_prices`",
+        "3. `products`, `suppliers`, `customers`, `product_prices`"
+      ],
+      "mermaid_entity": false,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "CANDIDATE_TABLE_NAME_NEEDS_SOURCE_CONFIRMATION"
+    },
+    {
+      "table_name_candidate": "production_inputs",
+      "source_evidence_lines": [
+        95,
+        238,
+        435,
+        463
+      ],
+      "evidence_context": [
+        "- `production_inputs` ve `production_outputs` işlem belgesinin satırlarıdır; genealogy kenarları ileri/geriye izleme için açık ve hızlı bir ilişki sağlar. İki kayıt türü aynı transaction içinde yazılır.",
+        "### 6.2 `production_inputs`",
+        "Bu örnek `production_inputs`, `production_service_costs`, `production_outputs`, `lots`, `stock_movements` ve maliyet hesaplama katmanını kapsar.",
+        "5. `production_orders`, `production_inputs`, `production_outputs`, `production_service_costs`"
+      ],
+      "mermaid_entity": false,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "CANDIDATE_TABLE_NAME_NEEDS_SOURCE_CONFIRMATION"
+    },
+    {
+      "table_name_candidate": "production_orders",
+      "source_evidence_lines": [
+        232,
+        463
+      ],
+      "evidence_context": [
+        "### 6.1 `production_orders`",
+        "5. `production_orders`, `production_inputs`, `production_outputs`, `production_service_costs`"
+      ],
+      "mermaid_entity": true,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "MERMAID_ENTITY_ONLY_TABLE_SCHEMA_NOT_PROVEN"
+    },
+    {
+      "table_name_candidate": "production_outputs",
+      "source_evidence_lines": [
+        95,
+        244,
+        435,
+        463
+      ],
+      "evidence_context": [
+        "- `production_inputs` ve `production_outputs` işlem belgesinin satırlarıdır; genealogy kenarları ileri/geriye izleme için açık ve hızlı bir ilişki sağlar. İki kayıt türü aynı transaction içinde yazılır.",
+        "### 6.3 `production_outputs`",
+        "Bu örnek `production_inputs`, `production_service_costs`, `production_outputs`, `lots`, `stock_movements` ve maliyet hesaplama katmanını kapsar.",
+        "5. `production_orders`, `production_inputs`, `production_outputs`, `production_service_costs`"
+      ],
+      "mermaid_entity": false,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "CANDIDATE_TABLE_NAME_NEEDS_SOURCE_CONFIRMATION"
+    },
+    {
+      "table_name_candidate": "production_service_costs",
+      "source_evidence_lines": [
+        250,
+        435,
+        463
+      ],
+      "evidence_context": [
+        "### 6.4 `production_service_costs`",
+        "Bu örnek `production_inputs`, `production_service_costs`, `production_outputs`, `lots`, `stock_movements` ve maliyet hesaplama katmanını kapsar.",
+        "5. `production_orders`, `production_inputs`, `production_outputs`, `production_service_costs`"
+      ],
+      "mermaid_entity": false,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "CANDIDATE_TABLE_NAME_NEEDS_SOURCE_CONFIRMATION"
+    },
+    {
+      "table_name_candidate": "products",
+      "source_evidence_lines": [
+        124,
+        461
+      ],
+      "evidence_context": [
+        "### 4.1 `products`",
+        "3. `products`, `suppliers`, `customers`, `product_prices`"
+      ],
+      "mermaid_entity": true,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "MERMAID_ENTITY_ONLY_TABLE_SCHEMA_NOT_PROVEN"
+    },
+    {
+      "table_name_candidate": "recall_customer_impacts",
+      "source_evidence_lines": [
+        357,
+        467
+      ],
+      "evidence_context": [
+        "### 10.3 `recall_customer_impacts`",
+        "9. `recalls`, `recall_lots`, `recall_customer_impacts`"
+      ],
+      "mermaid_entity": false,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "CANDIDATE_TABLE_NAME_NEEDS_SOURCE_CONFIRMATION"
+    },
+    {
+      "table_name_candidate": "recall_impacts",
+      "source_evidence_lines": [],
+      "evidence_context": [],
+      "mermaid_entity": false,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "CANDIDATE_TABLE_NAME_NEEDS_SOURCE_CONFIRMATION"
+    },
+    {
+      "table_name_candidate": "recall_lots",
+      "source_evidence_lines": [
+        190,
+        351,
+        386,
+        415,
+        467
+      ],
+      "evidence_context": [
+        "**Kural:** `BLOCKED` kalıcı lot durumu değildir. Blokaj geçmişi `lot_blocks`/`recall_lots` üzerinden tutulur; lot aynı anda fiziksel stok taşıyabilir ve satışa kapalı olabilir.",
+        "### 10.2 `recall_lots`",
+        "- UNIQUE (`recall_id`, `lot_id`) in `recall_lots`.",
+        "- `recalls` ve `recall_lots` kayıtlarını yaz.",
+        "9. `recalls`, `recall_lots`, `recall_customer_impacts`"
+      ],
+      "mermaid_entity": false,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "CANDIDATE_TABLE_NAME_NEEDS_SOURCE_CONFIRMATION"
+    },
+    {
+      "table_name_candidate": "recalls",
+      "source_evidence_lines": [
+        347,
+        415,
+        467
+      ],
+      "evidence_context": [
+        "### 10.1 `recalls`",
+        "- `recalls` ve `recall_lots` kayıtlarını yaz.",
+        "9. `recalls`, `recall_lots`, `recall_customer_impacts`"
+      ],
+      "mermaid_entity": true,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "MERMAID_ENTITY_ONLY_TABLE_SCHEMA_NOT_PROVEN"
+    },
+    {
+      "table_name_candidate": "roles",
+      "source_evidence_lines": [
+        114,
+        116,
+        460
+      ],
+      "evidence_context": [
+        "### 3.2 `roles` ve `user_roles`",
+        "`roles`: `id BIGINT PK`, `code VARCHAR(40) UNIQUE NOT NULL`, `name VARCHAR(100) NOT NULL`.",
+        "2. `users`, `roles`, `user_roles`"
+      ],
+      "mermaid_entity": false,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "CANDIDATE_TABLE_NAME_NEEDS_SOURCE_CONFIRMATION"
+    },
+    {
+      "table_name_candidate": "sale_lines",
+      "source_evidence_lines": [
+        323,
+        327,
+        384,
+        466,
+        506
+      ],
+      "evidence_context": [
+        "### 9.2 `sale_lines`",
+        "Unique: (`sale_id`, `line_number`). Backend `line_total` ve `total_amount` değerlerini doğrular; istemcinin gönderdiği hesaplamayı doğrudan güvenilir kabul etmez. İlk sürümde her satır tam olarak bir lota bağlanır; bir ü",
+        "- UNIQUE (`sale_id`, `line_number`) in `sale_lines`.",
+        "8. `sales`, `sale_lines`, `shipments`, `shipment_lines`, `idempotency_records`",
+        "**Bağlayıcı karar:** Dispatch tek `OUT` hareketinin sahibidir. `sales`/`sale_lines` yalnızca ticari kaydı temsil eder; stok hareketi ve bakiye azaltımı oluşturmaz. Fiziksel ürün çıkışı, sevkiyatın dispatch edilmesiyle ka"
+      ],
+      "mermaid_entity": false,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "CANDIDATE_TABLE_NAME_NEEDS_SOURCE_CONFIRMATION"
+    },
+    {
+      "table_name_candidate": "sales",
+      "source_evidence_lines": [
+        319,
+        327,
+        466,
+        506
+      ],
+      "evidence_context": [
+        "### 9.1 `sales`",
+        "Unique: (`sale_id`, `line_number`). Backend `line_total` ve `total_amount` değerlerini doğrular; istemcinin gönderdiği hesaplamayı doğrudan güvenilir kabul etmez. İlk sürümde her satır tam olarak bir lota bağlanır; bir ü",
+        "8. `sales`, `sale_lines`, `shipments`, `shipment_lines`, `idempotency_records`",
+        "**Bağlayıcı karar:** Dispatch tek `OUT` hareketinin sahibidir. `sales`/`sale_lines` yalnızca ticari kaydı temsil eder; stok hareketi ve bakiye azaltımı oluşturmaz. Fiziksel ürün çıkışı, sevkiyatın dispatch edilmesiyle ka"
+      ],
+      "mermaid_entity": true,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "MERMAID_ENTITY_ONLY_TABLE_SCHEMA_NOT_PROVEN"
+    },
+    {
+      "table_name_candidate": "shipment_lines",
+      "source_evidence_lines": [
+        333,
+        385,
+        466
+      ],
+      "evidence_context": [
+        "### 9.4 `shipment_lines`",
+        "- UNIQUE (`shipment_id`, `line_number`) in `shipment_lines`.",
+        "8. `sales`, `sale_lines`, `shipments`, `shipment_lines`, `idempotency_records`"
+      ],
+      "mermaid_entity": false,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "CANDIDATE_TABLE_NAME_NEEDS_SOURCE_CONFIRMATION"
+    },
+    {
+      "table_name_candidate": "shipments",
+      "source_evidence_lines": [
+        329,
+        466
+      ],
+      "evidence_context": [
+        "### 9.3 `shipments`",
+        "8. `sales`, `sale_lines`, `shipments`, `shipment_lines`, `idempotency_records`"
+      ],
+      "mermaid_entity": true,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "MERMAID_ENTITY_ONLY_TABLE_SCHEMA_NOT_PROVEN"
+    },
+    {
+      "table_name_candidate": "stock_movements",
+      "source_evidence_lines": [
+        96,
+        203,
+        435,
+        462
+      ],
+      "evidence_context": [
+        "- `inventory_balances` bir lot için güncel merkezi bakiyeyi tutar; `stock_movements` denetlenebilir hareket geçmişidir.",
+        "### 5.3 `stock_movements`",
+        "Bu örnek `production_inputs`, `production_service_costs`, `production_outputs`, `lots`, `stock_movements` ve maliyet hesaplama katmanını kapsar.",
+        "4. `lots`, `inventory_balances`, `stock_movements`, `lot_blocks`"
+      ],
+      "mermaid_entity": false,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "CANDIDATE_TABLE_NAME_NEEDS_SOURCE_CONFIRMATION"
+    },
+    {
+      "table_name_candidate": "suppliers",
+      "source_evidence_lines": [
+        155,
+        461
+      ],
+      "evidence_context": [
+        "### 4.4 `suppliers`",
+        "3. `products`, `suppliers`, `customers`, `product_prices`"
+      ],
+      "mermaid_entity": true,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "MERMAID_ENTITY_ONLY_TABLE_SCHEMA_NOT_PROVEN"
+    },
+    {
+      "table_name_candidate": "unit_conversions",
+      "source_evidence_lines": [
+        149,
+        459
+      ],
+      "evidence_context": [
+        "### 4.3 `unit_conversions`",
+        "1. `units`, `unit_conversions`"
+      ],
+      "mermaid_entity": false,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "CANDIDATE_TABLE_NAME_NEEDS_SOURCE_CONFIRMATION"
+    },
+    {
+      "table_name_candidate": "units",
+      "source_evidence_lines": [
+        140,
+        459
+      ],
+      "evidence_context": [
+        "### 4.2 `units`",
+        "1. `units`, `unit_conversions`"
+      ],
+      "mermaid_entity": true,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "MERMAID_ENTITY_ONLY_TABLE_SCHEMA_NOT_PROVEN"
+    },
+    {
+      "table_name_candidate": "user_roles",
+      "source_evidence_lines": [
+        114,
+        120,
+        382,
+        460
+      ],
+      "evidence_context": [
+        "### 3.2 `roles` ve `user_roles`",
+        "`user_roles`: `user_id BIGINT FK users.id`, `role_id BIGINT FK roles.id`, `created_at DATETIME(6)`; composite PK (`user_id`, `role_id`). Kullanıcı birden fazla role sahip olabilir.",
+        "- UNIQUE (`user_id`, `role_id`) in `user_roles`.",
+        "2. `users`, `roles`, `user_roles`"
+      ],
+      "mermaid_entity": false,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "CANDIDATE_TABLE_NAME_NEEDS_SOURCE_CONFIRMATION"
+    },
+    {
+      "table_name_candidate": "users",
+      "source_evidence_lines": [
+        102,
+        460
+      ],
+      "evidence_context": [
+        "### 3.1 `users`",
+        "2. `users`, `roles`, `user_roles`"
+      ],
+      "mermaid_entity": true,
+      "column_inventory_status": "NOT_EXTRACTED",
+      "status": "MERMAID_ENTITY_ONLY_TABLE_SCHEMA_NOT_PROVEN"
+    }
+  ],
+  "schema_sections": [
+    {
+      "heading_line": 16,
+      "heading": "### 1.1 Ortak alanlar",
+      "end_line": 29,
+      "has_markdown_table": true,
+      "mentions_create_table": false,
+      "code_identifiers": [
+        "created_at",
+        "created_by",
+        "id",
+        "updated_at",
+        "updated_by"
+      ]
+    },
+    {
+      "heading_line": 50,
+      "heading": "## 2. ERD — temel ilişkiler",
+      "end_line": 99,
+      "has_markdown_table": true,
+      "mentions_create_table": false,
+      "code_identifiers": [
+        "inventory_balances",
+        "lot_genealogy_edges",
+        "production_inputs",
+        "production_outputs",
+        "stock_movements"
+      ]
+    },
+    {
+      "heading_line": 192,
+      "heading": "### 5.2 `inventory_balances`",
+      "end_line": 202,
+      "has_markdown_table": true,
+      "mentions_create_table": false,
+      "code_identifiers": [
+        "lot_id",
+        "on_hand_quantity",
+        "reserved_quantity",
+        "updated_at"
+      ]
+    },
+    {
+      "heading_line": 491,
+      "heading": "## Revizyon 1.11 — Kanonik şema kuralları (22 Ekim 2026)",
+      "end_line": 494,
+      "has_markdown_table": false,
+      "mentions_create_table": false,
+      "code_identifiers": []
+    },
+    {
+      "heading_line": 508,
+      "heading": "### Ağırlık farkı ve nullable alanlar",
+      "end_line": 511,
+      "has_markdown_table": false,
+      "mentions_create_table": false,
+      "code_identifiers": []
+    },
+    {
+      "heading_line": 516,
+      "heading": "## Normatif ek — Cilt 1.31/1.32 onaylı alan ve maliyet kuralları",
+      "end_line": 519,
+      "has_markdown_table": false,
+      "mentions_create_table": false,
+      "code_identifiers": []
+    }
+  ],
+  "markdown_tables": [
+    {
+      "start_line": 20,
+      "end_line": 26,
+      "header": "| Alan | MySQL tipi | Kural |",
+      "row_count": 5
+    },
+    {
+      "start_line": 104,
+      "end_line": 112,
+      "header": "| Alan | Tip | NULL | Kısıt / açıklama |",
+      "row_count": 7
+    },
+    {
+      "start_line": 126,
+      "end_line": 136,
+      "header": "| Alan | Tip | NULL | Kısıt / açıklama |",
+      "row_count": 9
+    },
+    {
+      "start_line": 142,
+      "end_line": 147,
+      "header": "| Alan | Tip | NULL | Kısıt / açıklama |",
+      "row_count": 4
+    },
+    {
+      "start_line": 175,
+      "end_line": 188,
+      "header": "| Alan | Tip | NULL | Kısıt / açıklama |",
+      "row_count": 12
+    },
+    {
+      "start_line": 194,
+      "end_line": 199,
+      "header": "| Alan | Tip | NULL | Kısıt / açıklama |",
+      "row_count": 4
+    },
+    {
+      "start_line": 205,
+      "end_line": 220,
+      "header": "| Alan | Tip | NULL | Kısıt / açıklama |",
+      "row_count": 14
+    },
+    {
+      "start_line": 276,
+      "end_line": 286,
+      "header": "| Alan | Tip | NULL? | Kural |",
+      "row_count": 9
+    },
+    {
+      "start_line": 294,
+      "end_line": 305,
+      "header": "| Alan | Tip | Kural |",
+      "row_count": 10
+    }
+  ],
+  "identifier_occurrences_count": 100,
+  "endpoint_permission_diff": {
+    "api_signature_count": 57,
+    "permission_signature_count": 56,
+    "api_only": [
+      {
+        "method": "POST",
+        "path": "/api/v1/butchering-orders/{order_id}/waste-records"
+      }
+    ],
+    "permission_only": []
+  },
+  "limits": [
+    "Candidate table names are not a complete or authoritative schema.",
+    "No column is marked confirmed unless its exact table/column definition is visible in the source.",
+    "No ORM metadata, generated OpenAPI, or live MySQL schema was inspected."
+  ],
+  "migration_gate": {
+    "migration_created": false,
+    "database_changed": false,
+    "separate_explicit_approval_required": true
+  }
+}

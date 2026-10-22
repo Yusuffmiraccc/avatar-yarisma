@@ -1,0 +1,8 @@
+﻿blocker_id,description,severity,closure_evidence
+G-01,"Complete physical schema inventory: tables, columns, types, nullability, PK/FK, unique/index/check",BLOCKER,Canonical ERD plus source-backed schema/constraint register
+G-02,Missing waste-records permission row,BLOCKER,Owner-approved role and permission key; 57/57 endpoint signature parity
+G-03,Endpoint request/response DTO fields not fully verified,BLOCKER,Source-backed DTO crosswalk for every endpoint
+G-04,WF-01 through WF-10 not all closed,BLOCKER,Decision register with approved decisions or explicit MVP exclusions
+G-05,Transaction/audit/idempotency scope not endpoint-verified,BLOCKER,Endpoint-specific transaction/retry matrix plus tests
+G-06,No runtime OpenAPI/ORM/MySQL/test verification,BLOCKER,"Actual generated OpenAPI, ORM metadata, MySQL constraints and test reports"
+G-07,Role cells not proven by signature matching,BLOCKER,Row-by-row permission review against approved role matrix
