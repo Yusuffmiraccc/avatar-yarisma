@@ -1,0 +1,650 @@
+{
+  "version": "1.38",
+  "source": "volumes/volume-01-2-erd-and-data-schema.md",
+  "extraction_method": "Conservative static Markdown/SQL extraction; unstructured inline prose is not automatically interpreted as authoritative schema.",
+  "sql_create_table_statements_found": 0,
+  "sql_tables": [],
+  "heading_inventory": [
+    {
+      "line": 14,
+      "heading": "## 1. Genel veri kuralları"
+    },
+    {
+      "line": 16,
+      "heading": "### 1.1 Ortak alanlar"
+    },
+    {
+      "line": 30,
+      "heading": "### 1.2 Veri tipi ve gösterim kuralları"
+    },
+    {
+      "line": 43,
+      "heading": "### 1.3 İsimlendirme"
+    },
+    {
+      "line": 50,
+      "heading": "## 2. ERD — temel ilişkiler"
+    },
+    {
+      "line": 100,
+      "heading": "## 3. Kimlik doğrulama ve erişim"
+    },
+    {
+      "line": 102,
+      "heading": "### 3.1 `users`"
+    },
+    {
+      "line": 114,
+      "heading": "### 3.2 `roles` ve `user_roles`"
+    },
+    {
+      "line": 122,
+      "heading": "## 4. Katalog ve birimler"
+    },
+    {
+      "line": 124,
+      "heading": "### 4.1 `products`"
+    },
+    {
+      "line": 140,
+      "heading": "### 4.2 `units`"
+    },
+    {
+      "line": 149,
+      "heading": "### 4.3 `unit_conversions`"
+    },
+    {
+      "line": 155,
+      "heading": "### 4.4 `suppliers`"
+    },
+    {
+      "line": 159,
+      "heading": "### 4.5 `customers`"
+    },
+    {
+      "line": 163,
+      "heading": "### 4.6 `product_prices`"
+    },
+    {
+      "line": 171,
+      "heading": "## 5. Lot ve stok"
+    },
+    {
+      "line": 173,
+      "heading": "### 5.1 `lots`"
+    },
+    {
+      "line": 192,
+      "heading": "### 5.2 `inventory_balances`"
+    },
+    {
+      "line": 203,
+      "heading": "### 5.3 `stock_movements`"
+    },
+    {
+      "line": 224,
+      "heading": "### 5.4 `lot_blocks`"
+    },
+    {
+      "line": 230,
+      "heading": "## 6. Üretim"
+    },
+    {
+      "line": 232,
+      "heading": "### 6.1 `production_orders`"
+    },
+    {
+      "line": 238,
+      "heading": "### 6.2 `production_inputs`"
+    },
+    {
+      "line": 244,
+      "heading": "### 6.3 `production_outputs`"
+    },
+    {
+      "line": 250,
+      "heading": "### 6.4 `production_service_costs`"
+    },
+    {
+      "line": 256,
+      "heading": "## 7. Parçalama"
+    },
+    {
+      "line": 258,
+      "heading": "### 7.1 `butchering_orders`"
+    },
+    {
+      "line": 262,
+      "heading": "### 7.2 `butchering_inputs`"
+    },
+    {
+      "line": 268,
+      "heading": "### 7.3 `butchering_outputs` — stokta izlenen çıktılar"
+    },
+    {
+      "line": 274,
+      "heading": "### 7.4 `butchering_waste_records` — fire ölçümleri ve maliyet uzlaştırması"
+    },
+    {
+      "line": 290,
+      "heading": "## 8. Lot kökeni ve izlenebilirlik"
+    },
+    {
+      "line": 292,
+      "heading": "### 8.1 `lot_genealogy_edges`"
+    },
+    {
+      "line": 309,
+      "heading": "### 8.2 İzlenebilirlik kuralları"
+    },
+    {
+      "line": 317,
+      "heading": "## 9. Satış ve sevkiyat"
+    },
+    {
+      "line": 319,
+      "heading": "### 9.1 `sales`"
+    },
+    {
+      "line": 323,
+      "heading": "### 9.2 `sale_lines`"
+    },
+    {
+      "line": 329,
+      "heading": "### 9.3 `shipments`"
+    },
+    {
+      "line": 333,
+      "heading": "### 9.4 `shipment_lines`"
+    },
+    {
+      "line": 339,
+      "heading": "### 9.5 `idempotency_records`"
+    },
+    {
+      "line": 345,
+      "heading": "## 10. Geri çağırma"
+    },
+    {
+      "line": 347,
+      "heading": "### 10.1 `recalls`"
+    },
+    {
+      "line": 351,
+      "heading": "### 10.2 `recall_lots`"
+    },
+    {
+      "line": 357,
+      "heading": "### 10.3 `recall_customer_impacts`"
+    },
+    {
+      "line": 363,
+      "heading": "## 11. Audit ve AI"
+    },
+    {
+      "line": 365,
+      "heading": "### 11.1 `audit_events`"
+    },
+    {
+      "line": 371,
+      "heading": "### 11.2 `ml_predictions`"
+    },
+    {
+      "line": 377,
+      "heading": "## 12. Önemli benzersizlikler ve indeksler"
+    },
+    {
+      "line": 391,
+      "heading": "## 13. Transaction sınırları — zorunlu kurallar"
+    },
+    {
+      "line": 393,
+      "heading": "### 13.1 Satış kaydı oluşturma"
+    },
+    {
+      "line": 402,
+      "heading": "### 13.2 Üretim tamamlama"
+    },
+    {
+      "line": 405,
+      "heading": "### 13.3 Parçalama tamamlama"
+    },
+    {
+      "line": 408,
+      "heading": "### 13.4 Sevkiyat dispatch / tamamlama"
+    },
+    {
+      "line": 411,
+      "heading": "### 13.5 Recall başlatma"
+    },
+    {
+      "line": 423,
+      "heading": "## 14. PDF kabul verileriyle doğrulama"
+    },
+    {
+      "line": 425,
+      "heading": "### 14.1 Dış üretim maliyeti"
+    },
+    {
+      "line": 437,
+      "heading": "### 14.2 Parçalama tutarsızlığı"
+    },
+    {
+      "line": 440,
+      "heading": "### 14.3 Lot geri çağırma"
+    },
+    {
+      "line": 456,
+      "heading": "## 15. İlk migration ve seed sırası"
+    },
+    {
+      "line": 472,
+      "heading": "## 16. Cilt 1.2 kabul kriterleri"
+    },
+    {
+      "line": 487,
+      "heading": "## 17. Sonraki belge"
+    },
+    {
+      "line": 491,
+      "heading": "## Revizyon 1.11 — Kanonik şema kuralları (22 Ekim 2026)"
+    },
+    {
+      "line": 495,
+      "heading": "### Fire ve stokta izlenen çıktılar"
+    },
+    {
+      "line": 500,
+      "heading": "### Üretim tüketimi ve hareket defteri"
+    },
+    {
+      "line": 505,
+      "heading": "### Satış ve sevkiyat stok sahipliği — KARAR ONAYLANDI"
+    },
+    {
+      "line": 508,
+      "heading": "### Ağırlık farkı ve nullable alanlar"
+    },
+    {
+      "line": 512,
+      "heading": "### Düzeltme/ters kayıt veri modeli"
+    },
+    {
+      "line": 516,
+      "heading": "## Normatif ek — Cilt 1.31/1.32 onaylı alan ve maliyet kuralları"
+    },
+    {
+      "line": 520,
+      "heading": "### Ürün ve lot son tüketim tarihi"
+    },
+    {
+      "line": 527,
+      "heading": "### Fire nedeni ve fire kaydı"
+    },
+    {
+      "line": 535,
+      "heading": "### Ağırlık dengesi ve maliyet uzlaştırması"
+    }
+  ],
+  "table_section_candidates": [
+    {
+      "line": 497,
+      "text": "- Fire ayrı `butchering_waste_records` tablosunda tutulur. `butchering_outputs` yalnızca `CUT` ve stokta izlenen `BYPRODUCT` içerir; bu tablodaki `product_id` ve `lot_id` zorunludur. Fire tablosu satılabilir stok/lot üretmez."
+    }
+  ],
+  "backtick_identifier_candidates": [
+    "actual_weight",
+    "allocated_cost",
+    "audit_events",
+    "base_unit_code",
+    "blocked_at",
+    "butchering_inputs",
+    "butchering_order_id",
+    "butchering_orders",
+    "butchering_outputs",
+    "butchering_waste_records",
+    "code",
+    "created_at",
+    "created_by",
+    "customers",
+    "dimension",
+    "direction",
+    "display_name",
+    "email",
+    "expiry_date",
+    "from_unit_code",
+    "id",
+    "idempotency_key",
+    "idempotency_records",
+    "initial_quantity",
+    "input_lot_id",
+    "input_weight",
+    "inventory_balances",
+    "is_active",
+    "is_lot_tracked",
+    "line_number",
+    "line_total",
+    "lot_blocks",
+    "lot_code",
+    "lot_genealogy_edges",
+    "lot_id",
+    "lot_origin_type",
+    "lots",
+    "ml_predictions",
+    "movement_type",
+    "name",
+    "notes",
+    "occurred_at",
+    "on_hand_quantity",
+    "password_hash",
+    "price_type",
+    "process_id",
+    "process_type",
+    "product_id",
+    "product_prices",
+    "product_type",
+    "production_inputs",
+    "production_orders",
+    "production_outputs",
+    "production_service_costs",
+    "products",
+    "quantity",
+    "reason_code",
+    "recall_customer_impacts",
+    "recall_id",
+    "recall_lots",
+    "recalls",
+    "received_at",
+    "reserved_quantity",
+    "role_id",
+    "roles",
+    "sale_id",
+    "sale_lines",
+    "sales",
+    "scope_key",
+    "shipment_id",
+    "shipment_lines",
+    "shipments",
+    "snake_case",
+    "source_id",
+    "source_line_id",
+    "source_lot_id",
+    "source_quantity",
+    "source_type",
+    "source_unit_code",
+    "status",
+    "stock_movements",
+    "supplier_id",
+    "suppliers",
+    "target_lot_id",
+    "target_quantity",
+    "target_unit_code",
+    "to_unit_code",
+    "total_amount",
+    "total_cost",
+    "total_purchase_cost",
+    "unblocked_at",
+    "unit_code",
+    "unit_conversions",
+    "units",
+    "updated_at",
+    "updated_by",
+    "user_id",
+    "user_roles",
+    "users",
+    "valid_from"
+  ],
+  "warnings": [
+    "No CREATE TABLE statements were found in SQL code fences; therefore this source does not provide a directly machine-extractable SQL schema in that format.",
+    "Backtick identifiers and Mermaid relationship entity names are candidates only; they must not be treated as a complete table/column inventory.",
+    "No ORM metadata or live MySQL schema was inspected."
+  ],
+  "endpoint_permission_diff": {
+    "api_signature_count": 57,
+    "permission_signature_count": 56,
+    "api_only": [
+      {
+        "method": "POST",
+        "path": "/api/v1/butchering-orders/{order_id}/waste-records"
+      }
+    ],
+    "permission_only": []
+  },
+  "workflow_mentions": [
+    {
+      "workflow_id": "WF-01",
+      "workflow_document_evidence": [
+        {
+          "line": 373,
+          "text": "| WF-01 | Fire çıktısı için ürün/lot alanları nullable mı? | DB constraint ve DTO tutarlılığı | Cilt 1.2 + Cilt 1.3 + Cilt 1.4 |"
+        },
+        {
+          "line": 386,
+          "text": "1. WF-01 ve WF-03 gibi veri bütünlüğünü doğrudan etkileyen kararları netleştir."
+        },
+        {
+          "line": 407,
+          "text": "- WF-01–WF-10 kararlarının durumu belgelerde açıkça işaretlenmeli."
+        },
+        {
+          "line": 415,
+          "text": "### WF-01 — Parçalama çıktısı ve fire ayrımı"
+        }
+      ],
+      "registry_evidence": [
+        {
+          "line": 18,
+          "text": "| WF-01 | Butchering Output & Waste | Kesim/yan ürün ve ayrı fire kayıtları | ONAYLI — Cilt 1.17 |"
+        },
+        {
+          "line": 29,
+          "text": "**Not:** Eski belgelerde WF-01–WF-10 numaraları farklı anlamlarda kullanılmış olabilir. Bu tablo yeni kanonik ID eşlemesidir; geçmiş metinler değiştirilirken eski referanslar sessizce yeniden yorumlanmamalı, revizyon günlüğüne yazılmalıdır. WF-03 sevkiyat sahi"
+        }
+      ],
+      "workflow_document_mentions": 4,
+      "registry_mentions": 2
+    },
+    {
+      "workflow_id": "WF-02",
+      "workflow_document_evidence": [
+        {
+          "line": 374,
+          "text": "| WF-02 | Üretim girdisi stoktan hangi aşamada düşer? | Stok doğruluğu ve yarım emir davranışı | Cilt 1.2 + Cilt 1.3 |"
+        },
+        {
+          "line": 418,
+          "text": "### WF-02 — Üretim tüketimi"
+        }
+      ],
+      "registry_evidence": [
+        {
+          "line": 19,
+          "text": "| WF-02 | Production Consumption & Completion | Üretim emri, gerçek tüketim ve tamamlanma | ONAYLI — Cilt 1.5 rev. 1.11 |"
+        }
+      ],
+      "workflow_document_mentions": 2,
+      "registry_mentions": 1
+    },
+    {
+      "workflow_id": "WF-03",
+      "workflow_document_evidence": [
+        {
+          "line": 218,
+          "text": "**Sözleşme durumu:** WF-03 kullanıcı tarafından onaylandı. Cilt 1.2/1.3 normatif metinleri dispatch’i tek stok çıkışı sahibi olarak tanımlar; satış ve sevkiyat aynı fiziksel miktarı iki kez düşüremez."
+        },
+        {
+          "line": 375,
+          "text": "| WF-03 | Satış ve sevkiyat stok çıkışının sahibi hangisi? | **KAPATILDI — dispatch tek OUT sahibidir** | Cilt 1.2 + Cilt 1.3 + kullanıcı onayı |"
+        },
+        {
+          "line": 386,
+          "text": "1. WF-01 ve WF-03 gibi veri bütünlüğünü doğrudan etkileyen kararları netleştir."
+        },
+        {
+          "line": 421,
+          "text": "### WF-03 — Satış/sevkiyat stok çıkışı"
+        }
+      ],
+      "registry_evidence": [
+        {
+          "line": 20,
+          "text": "| WF-03 | Sale & Dispatch Stock Ownership | Ticari satış ile fiziksel stok çıkışının ayrılması | ONAYLI — proje sahibi onayı |"
+        },
+        {
+          "line": 29,
+          "text": "**Not:** Eski belgelerde WF-01–WF-10 numaraları farklı anlamlarda kullanılmış olabilir. Bu tablo yeni kanonik ID eşlemesidir; geçmiş metinler değiştirilirken eski referanslar sessizce yeniden yorumlanmamalı, revizyon günlüğüne yazılmalıdır. WF-03 sevkiyat sahi"
+        }
+      ],
+      "workflow_document_mentions": 4,
+      "registry_mentions": 2
+    },
+    {
+      "workflow_id": "WF-04",
+      "workflow_document_evidence": [
+        {
+          "line": 376,
+          "text": "| WF-04 | Lot bakiyesi ile defter hareketi transaction/lock stratejisi | Eşzamanlı satışlarda negatif stok önleme | Cilt 1.2 + Cilt 1.3 |"
+        },
+        {
+          "line": 424,
+          "text": "### WF-04 — Recall aktivasyonu ve çözümü"
+        }
+      ],
+      "registry_evidence": [
+        {
+          "line": 21,
+          "text": "| WF-04 | Recall Activation, Resolution & Release | Recall blokajı, çözüm ve ayrı serbest bırakma | ONAYLI temel kural; ayrıntılar açık |"
+        }
+      ],
+      "workflow_document_mentions": 2,
+      "registry_mentions": 1
+    },
+    {
+      "workflow_id": "WF-05",
+      "workflow_document_evidence": [
+        {
+          "line": 377,
+          "text": "| WF-05 | Recall aktivasyonu senkron mu, ara durum/outbox mı? | Büyük genealogy grafiği ve atomiklik | Cilt 1.3 + mimari karar |"
+        },
+        {
+          "line": 427,
+          "text": "### WF-05 — Ağırlık farkı"
+        }
+      ],
+      "registry_evidence": [
+        {
+          "line": 22,
+          "text": "| WF-05 | Weight Balance & Variance | Parçalama ağırlık dengesi ve tolerans | Tolerans AÇIK |"
+        }
+      ],
+      "workflow_document_mentions": 2,
+      "registry_mentions": 1
+    },
+    {
+      "workflow_id": "WF-06",
+      "workflow_document_evidence": [
+        {
+          "line": 378,
+          "text": "| WF-06 | Recall çözümünde blokaj otomatik kalkar mı? | Güvenlik ve yanlış satış riski | Cilt 1.3 + rol/izin matrisi |"
+        },
+        {
+          "line": 430,
+          "text": "### WF-06 — Düzeltme ve ters kayıt"
+        }
+      ],
+      "registry_evidence": [
+        {
+          "line": 23,
+          "text": "| WF-06 | Correction & Reversal | Tamamlanmış işlemlerin izlenebilir düzeltmesi | Genel kural ONAYLI; işlem bazlı ayrıntılar açık |"
+        }
+      ],
+      "workflow_document_mentions": 2,
+      "registry_mentions": 1
+    },
+    {
+      "workflow_id": "WF-07",
+      "workflow_document_evidence": [
+        {
+          "line": 379,
+          "text": "| WF-07 | Ağırlık farkı toleransı ve gerekçe zorunluluğu | Kuzu parçalama denetimi | Gereksinim + Cilt 1.2 |"
+        },
+        {
+          "line": 433,
+          "text": "### WF-07 — Kritik komutların tekrar çağrılması"
+        }
+      ],
+      "registry_evidence": [
+        {
+          "line": 24,
+          "text": "| WF-07 | Critical Command Retry | Kritik komutların tekrar davranışı | Genel ilke ONAYLI; endpoint matrisi açık |"
+        }
+      ],
+      "workflow_document_mentions": 2,
+      "registry_mentions": 1
+    },
+    {
+      "workflow_id": "WF-08",
+      "workflow_document_evidence": [
+        {
+          "line": 380,
+          "text": "| WF-08 | Tamamlanmış iş emirleri nasıl ters kaydedilir? | Audit ve maliyet düzeltmesi | Cilt 1.2 + Cilt 1.3 |"
+        }
+      ],
+      "registry_evidence": [
+        {
+          "line": 25,
+          "text": "| WF-08 | Lot Receipt & Stock Entry | Satın alma/kabul ve lot oluşturma | Akış tanımlı; idempotency ve kesin durumlar açık |"
+        }
+      ],
+      "workflow_document_mentions": 1,
+      "registry_mentions": 1
+    },
+    {
+      "workflow_id": "WF-09",
+      "workflow_document_evidence": [
+        {
+          "line": 381,
+          "text": "| WF-09 | Kabul/üretim/parçalama komutları için idempotency standardı | Timeout sonrası yinelenen kayıtları önleme | Cilt 1.3 + Cilt 1.4 |"
+        }
+      ],
+      "registry_evidence": [
+        {
+          "line": 26,
+          "text": "| WF-09 | AI Prediction Lifecycle | Tahmin isteği, sonuç ve hata davranışı | İşlev tanımlı; kalıcı durum enumu gerekliliği açık |"
+        }
+      ],
+      "workflow_document_mentions": 1,
+      "registry_mentions": 1
+    },
+    {
+      "workflow_id": "WF-10",
+      "workflow_document_evidence": [
+        {
+          "line": 382,
+          "text": "| WF-10 | `IN_PROGRESS`, `PREPARED`, `ACTIVATING` gibi ara durumlar gerçekten gerekli mi? | İlk MVP kararı: recall için `ACTIVATING` yok; diğer durumlar yalnızca iş kuralı gerektiriyorsa kullanılır. | Durum enumları ve API |"
+        },
+        {
+          "line": 407,
+          "text": "- WF-01–WF-10 kararlarının durumu belgelerde açıkça işaretlenmeli."
+        }
+      ],
+      "registry_evidence": [
+        {
+          "line": 27,
+          "text": "| WF-10 | MVP State Minimalism | Gereksiz ara durumları dışarıda tutma | ONAYLI ilke; entity bazında nihai enum eşlemesi açık |"
+        },
+        {
+          "line": 29,
+          "text": "**Not:** Eski belgelerde WF-01–WF-10 numaraları farklı anlamlarda kullanılmış olabilir. Bu tablo yeni kanonik ID eşlemesidir; geçmiş metinler değiştirilirken eski referanslar sessizce yeniden yorumlanmamalı, revizyon günlüğüne yazılmalıdır. WF-03 sevkiyat sahi"
+        }
+      ],
+      "workflow_document_mentions": 2,
+      "registry_mentions": 2
+    }
+  ],
+  "migration_gate": {
+    "migration_created": false,
+    "database_changed": false,
+    "requires_separate_explicit_approval": true
+  }
+}

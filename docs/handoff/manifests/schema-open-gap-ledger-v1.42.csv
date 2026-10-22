@@ -1,0 +1,9 @@
+﻿gap_id,description,severity,closure_evidence
+SCH-01,Canonical ERD is conceptual Mermaid representation; physical CREATE TABLE schema not found in fenced SQL in prior audit,BLOCKER,Approved physical table/column/type/nullability inventory with source references
+SCH-02,Primary keys and foreign keys not comprehensively enumerated,BLOCKER,Table-by-table PK/FK register; all references target an existing candidate table
+SCH-03,"Unique constraints, indexes, check constraints not comprehensively enumerated",BLOCKER,Constraint/index register with rationale and supporting rules
+SCH-04,Critical fields remain candidate/VERIFY rather than schema-proven,BLOCKER,Each critical field confirmed against canonical ERD and DTO/workflow source
+SCH-05,Candidate names derived from conceptual ERD and backtick identifiers can be mistaken for physical schema,BLOCKER,Owner-approved canonical mapping from conceptual entities/identifiers to physical SQL names
+SCH-06,Cilt 1.40 endpoint/workflow/DTO/test parity remains incomplete,BLOCKER,Endpoint-specific contract evidence and acceptance tests
+SCH-07,WF-01..WF-10 transition and side-effect closure remains incomplete,BLOCKER,Workflow decision register with approved rules or explicit MVP exclusions
+SCH-08,"Runtime ORM metadata, OpenAPI, MySQL constraints, migration dry-run and tests not executed",BLOCKER,Runtime-generated evidence and automated verification report

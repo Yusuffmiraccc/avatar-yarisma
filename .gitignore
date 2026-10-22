@@ -63,3 +63,7 @@ Desktop.ini
 *.log
 *.tmp
 *.temp
+
+# ML artifacts
+ml_artifacts/
+backend/ml_artifacts/
