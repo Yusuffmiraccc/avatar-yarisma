@@ -126,7 +126,7 @@ Roller (ayrıntı `docs/API.md`): `ADMIN`, `OPERATOR`, `SALES`, `TRACEABILITY_MA
 ### 4.8 Satış ve sevkiyat (P0) — PDF "satış raporu"
 - Satış listesi/detayı (`/sales`): satır başına lot, miktar, birim fiyat ve ilgili stok hareketi. İptal (`/void`, `sales:void`).
 - Sevkiyat listesi (`/shipments`): oluştur, **sevk et** (`/dispatch`, `Idempotency-Key`), iptal, **iade** (`/return`, gerekçe). Sevk, fiziksel stok çıkışının tek sahibidir.
-- Satış oluşturma ekranı web'de P2'dir (saha satışı Android'dedir); ancak demo için yönetici satışı gerekebilir.
+- **Yeni satış ekranı (P1, karar verildi):** web'de de bir satış oluşturma ekranı bulunur. Bu yalnızca bir arayüzdür; yeni backend davranışı eklenmez, mevcut `POST /sales` kullanılır. Müşteri seç → satılabilir lot ve miktar ekle (liste fiyatı gösterilir, düzenlenemez) → `Idempotency-Key` ile gönder. Aynı kurallar geçerlidir (bloke lot, stok, fiyat). Android ile aynı sunucu mantığını paylaştığı için ek bir iş kuralı yazılmaz.
 
 ### 4.9 İzlenebilirlik (P0) — Görev 3
 - **Lot arama kutusu** (lot kodu: `ET-2026-001`).
@@ -231,8 +231,8 @@ Android ile paralel ilerlenecekse web'in 3. günden sonraki işleri (P1/P2) kıs
 | Rol/maliyet gizleme ekranları bozabilir | Her maliyet alanı opsiyonel tipli; VIEWER ve SALES ile elle kontrol edilir. |
 | Uzun süren AI eğitim isteği zaman aşımına düşebilir | Sunucu 200 dönene kadar bekleme göstergesi; eğitim zaten seed'de yapıldığı için demo bunu tetiklemez. |
 | Token saklama (sessionStorage) | Bilinen sınırlama olarak belgelenir; HttpOnly çerez backend değişikliği ister. |
-| Açık: web'de satış oluşturma ekranı gerekli mi? | Önerilen: gerekli değil (P2); saha satışı Android'dedir. Karar bekliyor. |
-| Açık: dışa aktarım biçimi CSV mi, PDF mi? | Önerilen: yalnızca CSV (tarayıcıda üretilir). |
+| Karar: web'de satış oluşturma ekranı | Olacak (P1), yalnızca arayüz olarak; sistemsel yeni bir iş kuralı eklenmez. |
+| Karar: dışa aktarım biçimi | Yalnızca CSV (tarayıcıda üretilir); PDF yok. |
 
 ## 11. Çalıştırma (hedef)
 

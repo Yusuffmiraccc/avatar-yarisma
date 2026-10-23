@@ -246,8 +246,8 @@ Web ile paralel çalışılacaksa Android'in **1–4. günleri** öncelikli, P2 
 | Eşzamanlı yenileme çakışması oturumu düşürebilir | Authenticator'da tek uçuşlu kilit + MockWebServer testi. |
 | Düz HTTP (cleartext) güvenliği | Yalnızca debug'ta ve yalnızca `10.0.2.2`/`localhost` için izin; sürümde kapalı. |
 | Kapsam şişmesi (QR, transfer) | P2 olarak etiketli; Gün 4 sonunda kalan süreye göre karar verilir. |
-| Açık: çevrimdışı lot kabulü gerekli mi? | Önerilen: gerekli değil (operasyon işleri çevrimiçi). Karar bekliyor. |
-| Açık: satışta müşteri zorunlu mu? | Backend `customer_id` ister; önerilen: zorunlu, perakende için "Genel müşteri" kaydı seed'e eklenebilir. Karar bekliyor. |
+| Karar: çevrimdışı lot kabulü | Yok; operasyon işleri (lot kabulü, transfer) çevrimiçi çalışır. |
+| Karar: satışta müşteri | Zorunlu (backend `customer_id` ister). Perakende satış için seed'e "Genel Müşteri" kaydı eklenecek. |
 
 ## 12. Çalıştırma (hedef)
 
