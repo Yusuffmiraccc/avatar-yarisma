@@ -17,7 +17,7 @@ def _out(user, tokens) -> TokenOut:
 
 @router.post("/login", response_model=TokenOut)
 def login(body: LoginIn, request: Request, db: DB):
-    user, tokens = svc.login(db, body.email, body.password, request_id_of(request))
+    user, tokens = svc.login(db, body.email, body.password, request_id_of(request), request=request)
     return _out(user, tokens)
 
 

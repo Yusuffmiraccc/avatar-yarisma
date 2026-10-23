@@ -4,7 +4,10 @@ Dürüstlük kuralları: her zaman basit bir baseline ile karşılaştırılır;
 baseline kullanılır ve sınırlılık notu üretilir; performans iddiası yalnızca ölçülen metriklerdir.
 """
 
-from datetime import datetime, timezone
+import os
+import tempfile
+from datetime import UTC, datetime
+from pathlib import Path
 
 import joblib
 import numpy as np
@@ -33,7 +36,7 @@ def _metrics(actual: np.ndarray, pred: np.ndarray) -> dict:
         "rmse": float(np.sqrt((err ** 2).mean())),
         "mape_percent": float((np.abs(err[nz]) / np.abs(actual[nz])).mean() * 100) if nz.any() else None,
         "r2": float(1 - (err ** 2).sum() / ss_tot) if ss_tot > 0 else None,
-        "n": int(len(actual)),
+        "n": len(actual),
     }
 
 
@@ -53,7 +56,7 @@ def _pipe(estimator, num, cat, scale: bool) -> Pipeline:
 def train_production(df: pd.DataFrame) -> dict:
     """Hedef: yield_ratio (çıktı paket / girdi kg). EKP, tahmin edilen miktardan türetilir."""
     n = len(df)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     version = f"prod-yield-{now:%Y%m%d%H%M%S}-n{n}"
     limitations = ["Eğitim verisi örnek/sentetik olabilir; gerçek üretici verisiyle yeniden eğitilmelidir.",
                    "Yalnızca geçmiş tamamlanmış üretim emirlerine dayanır; kalite/arıza gibi dış etkenler yoktur."]
@@ -96,7 +99,7 @@ def train_production(df: pd.DataFrame) -> dict:
     hp, hb = holdout_model.predict(X.iloc[te]), np.full(len(te), y[tr].mean())
     sub = df.iloc[te]
     hq = lambda p: (p * sub["total_input_kg"].to_numpy(), sub["input_cost"].to_numpy() / (p * sub["total_input_kg"].to_numpy()) + sub["service_unit_price"].to_numpy())
-    holdout = {"split": "son %20 (zaman sıralı)", "n_test": int(len(te)),
+    holdout = {"split": "son %20 (zaman sıralı)", "n_test": len(te),
                "model": {"output_quantity": _metrics(sub["output_qty"], hq(hp)[0]), "ekp": _metrics(sub["ekp"], hq(hp)[1])},
                "baseline": {"output_quantity": _metrics(sub["output_qty"], hq(hb)[0]), "ekp": _metrics(sub["ekp"], hq(hb)[1])}}
     final = candidates[best]().fit(X, y)
@@ -134,7 +137,7 @@ def predict_production(art: dict, f: dict) -> dict:
 def train_butchering(df: pd.DataFrame, targets: list[str]) -> dict:
     """df: animal_type, input_weight, r_<kod> oranları. Hedef: her parça için ağırlık oranı."""
     n = len(df)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     version = f"butchering-output-{now:%Y%m%d%H%M%S}-n{n}"
     cols = [f"r_{t}" for t in targets]
     limitations = ["Eğitim verisi örnek/sentetik olabilir; gerçek kesim kayıtlarıyla yeniden eğitilmelidir.",
@@ -205,8 +208,18 @@ def predict_butchering(art: dict, animal_type: str, input_weight: float) -> dict
 
 
 def save(art: dict, path: str) -> None:
-    joblib.dump(art, path)
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    fd, temp_path = tempfile.mkstemp(prefix=f".{target.name}.", suffix=".tmp", dir=target.parent)
+    os.close(fd)
+    try:
+        joblib.dump(art, temp_path)
+        os.replace(temp_path, target)
+    finally:
+        if os.path.exists(temp_path):
+            os.unlink(temp_path)
 
 
 def load(path: str) -> dict:
+    """Load trusted local artifacts only; joblib/pickle may execute code on load."""
     return joblib.load(path)

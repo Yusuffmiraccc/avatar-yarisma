@@ -4,7 +4,7 @@ from decimal import ROUND_HALF_UP, Decimal
 
 Q4 = Decimal("0.0001")
 Q6 = Decimal("0.000001")
-ZERO = Decimal("0")
+ZERO = Decimal(0)
 
 
 def q4(x: Decimal) -> Decimal:

@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import datetime
 from typing import Annotated, Literal
 
@@ -5,6 +6,7 @@ from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
+from app.api.v1.catalog import lot_out
 from app.core.deps import DB, require
 from app.core.errors import not_found, request_id_of
 from app.models import Customer, Lot, Recall, RecallCustomerImpact, RecallLot
@@ -12,7 +14,6 @@ from app.schemas.catalog import LotOut
 from app.schemas.common import ApiModel, Dec, Page, PageParams, paginate
 from app.services import recall as svc
 from app.services import traceability
-from app.api.v1.catalog import lot_out
 
 router = APIRouter(tags=["traceability"])
 PP = Annotated[PageParams, Depends()]
@@ -57,8 +58,8 @@ class RecallOut(ApiModel):
     reason_text: str | None = None
     started_at: datetime | None = None
     closed_at: datetime | None = None
-    lots: list[RecallLotOut] = []
-    impacts: list[ImpactOut] = []
+    lots: list[RecallLotOut] = Field(default_factory=list)
+    impacts: list[ImpactOut] = Field(default_factory=list)
     total_shipped_quantity: Dec | None = None
     second_tier_note: str = traceability.SECOND_TIER_NOTE
 
@@ -73,19 +74,38 @@ class UnblockIn(BaseModel):
 
 
 def recall_out(db, r: Recall) -> RecallOut:
+    return recall_out_many(db, [r])[0]
+
+
+def recall_out_many(db, recalls: list[Recall]) -> list[RecallOut]:
+    if not recalls:
+        return []
+    recall_ids = [r.id for r in recalls]
     lots = db.execute(select(RecallLot, Lot).join(Lot, Lot.id == RecallLot.lot_id)
-                      .where(RecallLot.recall_id == r.id).order_by(RecallLot.id)).all()
-    imps = db.execute(select(RecallCustomerImpact, Customer, Lot)
-                      .join(Customer, Customer.id == RecallCustomerImpact.customer_id)
-                      .join(Lot, Lot.id == RecallCustomerImpact.lot_id)
-                      .where(RecallCustomerImpact.recall_id == r.id).order_by(RecallCustomerImpact.id)).all()
-    out = RecallOut.model_validate(r)
-    out.lots = [RecallLotOut(lot_id=l.id, lot_code=l.lot_code, role=rl.role, blocked_at=rl.blocked_at) for rl, l in lots]
-    out.impacts = [ImpactOut.model_validate(i).model_copy(update={
-        "customer_code": c.code, "customer_name": c.name, "phone": c.phone, "email": c.email, "lot_code": l.lot_code})
-        for i, c, l in imps]
-    out.total_shipped_quantity = sum((i.quantity for i, _, _ in imps), 0) if imps else None
-    return out
+                      .where(RecallLot.recall_id.in_(recall_ids)).order_by(RecallLot.id)).all()
+    impacts = db.execute(select(RecallCustomerImpact, Customer, Lot)
+                         .join(Customer, Customer.id == RecallCustomerImpact.customer_id)
+                         .join(Lot, Lot.id == RecallCustomerImpact.lot_id)
+                         .where(RecallCustomerImpact.recall_id.in_(recall_ids))
+                         .order_by(RecallCustomerImpact.id)).all()
+    lots_by_recall, impacts_by_recall = defaultdict(list), defaultdict(list)
+    for row in lots:
+        lots_by_recall[row[0].recall_id].append(row)
+    for row in impacts:
+        impacts_by_recall[row[0].recall_id].append(row)
+    result = []
+    for recall in recalls:
+        current_lots = lots_by_recall[recall.id]
+        current_impacts = impacts_by_recall[recall.id]
+        out = RecallOut.model_validate(recall)
+        out.lots = [RecallLotOut(lot_id=lot.id, lot_code=lot.lot_code, role=rel.role, blocked_at=rel.blocked_at)
+                    for rel, lot in current_lots]
+        out.impacts = [ImpactOut.model_validate(impact).model_copy(update={
+            "customer_code": customer.code, "customer_name": customer.name, "phone": customer.phone,
+            "email": customer.email, "lot_code": lot.lot_code}) for impact, customer, lot in current_impacts]
+        out.total_shipped_quantity = sum((impact.quantity for impact, _, _ in current_impacts), 0) if current_impacts else None
+        result.append(out)
+    return result
 
 
 # ---- izleme -------------------------------------------------------------------------------------------------
@@ -134,7 +154,7 @@ def list_recalls(db: DB, p: PP, status: str | None = None, _=require("recalls:re
     if status:
         stmt = stmt.where(Recall.status == status)
     res = paginate(db, stmt, p)
-    res["items"] = [recall_out(db, r) for r in res["items"]]
+    res["items"] = recall_out_many(db, res["items"])
     return res
 
 
@@ -178,7 +198,7 @@ def patch_impact(recall_id: int, impact_id: int, body: ImpactPatch, db: DB, _=re
                                                             "phone": c.phone, "email": c.email, "lot_code": l.lot_code})
 
 
-@router.post("/lots/{lot_id}/unblock", response_model=LotOut)
+@router.post("/lots/{lot_id}/unblock", response_model=LotOut, response_model_exclude_unset=True)
 def unblock(lot_id: int, body: UnblockIn, request: Request, db: DB, user=require("lots:unblock")):
     lot = svc.unblock_lot(db, lot_id, body.reason, user.id, request_id_of(request))
-    return lot_out(db, lot)
+    return lot_out(db, lot, include_cost="costs:read" in user.permissions)

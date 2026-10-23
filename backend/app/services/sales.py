@@ -1,17 +1,19 @@
 import uuid
+from collections import defaultdict
 from decimal import Decimal
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.deps import CurrentUser
 from app.core.errors import bad_request, conflict, invalid_state, not_found
-from app.models import (Customer, Lot, Sale, SaleLine, Shipment, ShipmentLine, StockMovement)
+from app.models import Customer, Lot, Sale, SaleLine, Shipment, ShipmentLine, StockMovement
 from app.models.types import utcnow
 from app.schemas.sales import SaleIn, SaleLineOut, SaleOut, ShipmentIn, ShipmentLineOut, ShipmentOut
 from app.services import audit, costing, stock
 from app.services.production import sale_price
 
-ZERO = Decimal("0")
+ZERO = Decimal(0)
 
 
 def get_shipment(db: Session, sid: int, *, lock: bool = False) -> Shipment:
@@ -74,43 +76,66 @@ def cancel_shipment(db: Session, sh: Shipment, user_id: int) -> None:
 
 
 def shipment_out(db: Session, sh: Shipment) -> ShipmentOut:
-    lines = db.scalars(select(ShipmentLine).where(ShipmentLine.shipment_id == sh.id)
-                       .order_by(ShipmentLine.line_number)).all()
-    codes = {l.id: l.lot_code for l in db.scalars(select(Lot).where(Lot.id.in_([x.lot_id for x in lines])))} if lines else {}
-    cust = db.get(Customer, sh.customer_id)
-    out = ShipmentOut.model_validate(sh)
-    out.customer_name = cust.name if cust else None
-    out.lines = [ShipmentLineOut.model_validate(l).model_copy(update={"lot_code": codes.get(l.lot_id)}) for l in lines]
-    return out
+    return shipment_out_many(db, [sh])[0]
 
 
-def create_sale(db: Session, body: SaleIn, user_id: int, request_id: str | None) -> Sale:
+def shipment_out_many(db: Session, shipments: list[Shipment]) -> list[ShipmentOut]:
+    if not shipments:
+        return []
+    ids = [sh.id for sh in shipments]
+    customer_ids = {sh.customer_id for sh in shipments}
+    lines = db.scalars(select(ShipmentLine).where(ShipmentLine.shipment_id.in_(ids))
+                       .order_by(ShipmentLine.shipment_id, ShipmentLine.line_number)).all()
+    lots = {lot.id: lot.lot_code for lot in db.scalars(select(Lot).where(Lot.id.in_({line.lot_id for line in lines})))} if lines else {}
+    customers = {row.id: row for row in db.scalars(select(Customer).where(Customer.id.in_(customer_ids)))}
+    by_shipment = defaultdict(list)
+    for line in lines:
+        by_shipment[line.shipment_id].append(ShipmentLineOut.model_validate(line).model_copy(
+            update={"lot_code": lots.get(line.lot_id)}))
+    result = []
+    for sh in shipments:
+        out = ShipmentOut.model_validate(sh)
+        customer = customers.get(sh.customer_id)
+        out.customer_name = customer.name if customer else None
+        out.lines = by_shipment[sh.id]
+        result.append(out)
+    return result
+
+
+def create_sale(db: Session, body: SaleIn, user: CurrentUser, request_id: str | None) -> Sale:
     """Android satışı: satış (ticari) + sevkiyat/dispatch aynı transaction'da. Başarılı yanıt = stok düştü."""
     if db.get(Customer, body.customer_id) is None:
         raise not_found("Müşteri", body.customer_id)
     code = f"SAL-{utcnow():%Y%m%d}-{uuid.uuid4().hex[:8].upper()}"
-    sh = Shipment(shipment_code=f"SHP-{code}", customer_id=body.customer_id, status="DRAFT", created_by=user_id,
+    sh = Shipment(shipment_code=f"SHP-{code}", customer_id=body.customer_id, status="DRAFT", created_by=user.id,
                   notes=f"Satış {code} için otomatik sevkiyat")
     db.add(sh)
     db.flush()
     sale = Sale(sale_code=code, customer_id=body.customer_id, shipment_id=sh.id, status="COMPLETED",
-                sold_at=body.sold_at or utcnow(), total_amount=ZERO, created_by=user_id)
+                sold_at=body.sold_at or utcnow(), total_amount=ZERO, created_by=user.id)
     db.add(sale)
     db.flush()
     total = ZERO
     sale_lines: list[SaleLine] = []
+    overrides = []
     for n, l in enumerate(body.lines, 1):
         lot = db.get(Lot, l.lot_id)
         if lot is None:
             raise not_found("Lot", l.lot_id)
         if l.quantity <= 0:
             raise bad_request("Miktar pozitif olmalıdır.", {"line": n})
-        price = l.unit_price
-        if price is None:
-            pr = sale_price(db, lot.product_id)
-            if pr is None:
-                raise bad_request("Satır için birim fiyat verilmeli veya ürüne satış fiyatı tanımlanmalı.", {"line": n})
-            price = pr.amount
+        pr = sale_price(db, lot.product_id)
+        if pr is None:
+            raise bad_request("Ürüne geçerli bir SALE fiyatı tanımlanmalıdır.", {"line": n})
+        standard_price = pr.amount
+        price = standard_price if l.unit_price is None else l.unit_price
+        if price != standard_price:
+            if "sales:override_price" not in user.permissions:
+                raise bad_request("Özel satış fiyatı için yetkiniz yok.", {"line": n})
+            if not l.override_reason:
+                raise bad_request("Özel satış fiyatı için gerekçe zorunludur.", {"line": n})
+            overrides.append({"line": n, "product_id": lot.product_id, "standard_price": str(standard_price),
+                              "override_price": str(price), "reason": l.override_reason, "actor_id": user.id})
         if price < 0:
             raise bad_request("Birim fiyat negatif olamaz.", {"line": n})
         lt = costing.line_total(l.quantity, price)
@@ -121,16 +146,16 @@ def create_sale(db: Session, body: SaleIn, user_id: int, request_id: str | None)
                                    quantity=l.quantity, unit_code=lot.unit_code, unit_price=costing.q4(price),
                                    line_total=lt))
     db.flush()
-    dispatch(db, sh, user_id, request_id)
+    dispatch(db, sh, user.id, request_id)
     ship_lines = db.scalars(select(ShipmentLine).where(ShipmentLine.shipment_id == sh.id)
                             .order_by(ShipmentLine.line_number)).all()
-    for sl, shl in zip(sale_lines, ship_lines):
+    for sl, shl in zip(sale_lines, ship_lines, strict=True):
         sl.stock_movement_id = shl.stock_movement_id
         db.add(sl)
     sale.total_amount = total
     db.flush()
-    audit.record(db, actor_id=user_id, action="SALE_COMPLETED", entity_type="sale", entity_id=sale.id,
-                 request_id=request_id, details={"total": str(total), "shipment_id": sh.id})
+    audit.record(db, actor_id=user.id, action="SALE_COMPLETED", entity_type="sale", entity_id=sale.id,
+                 request_id=request_id, details={"total": str(total), "shipment_id": sh.id, "price_overrides": overrides})
     return sale
 
 
@@ -154,8 +179,22 @@ def void_sale(db: Session, sale_id: int, reason: str, user_id: int, request_id: 
 
 
 def sale_out(db: Session, sale: Sale) -> SaleOut:
-    lines = db.scalars(select(SaleLine).where(SaleLine.sale_id == sale.id).order_by(SaleLine.line_number)).all()
-    codes = {l.id: l.lot_code for l in db.scalars(select(Lot).where(Lot.id.in_([x.lot_id for x in lines])))} if lines else {}
-    out = SaleOut.model_validate(sale)
-    out.lines = [SaleLineOut.model_validate(l).model_copy(update={"lot_code": codes.get(l.lot_id)}) for l in lines]
-    return out
+    return sale_out_many(db, [sale])[0]
+
+
+def sale_out_many(db: Session, sales: list[Sale]) -> list[SaleOut]:
+    if not sales:
+        return []
+    ids = [sale.id for sale in sales]
+    lines = db.scalars(select(SaleLine).where(SaleLine.sale_id.in_(ids))
+                       .order_by(SaleLine.sale_id, SaleLine.line_number)).all()
+    codes = {lot.id: lot.lot_code for lot in db.scalars(select(Lot).where(Lot.id.in_({line.lot_id for line in lines})))} if lines else {}
+    by_sale = defaultdict(list)
+    for line in lines:
+        by_sale[line.sale_id].append(SaleLineOut.model_validate(line).model_copy(update={"lot_code": codes.get(line.lot_id)}))
+    result = []
+    for sale in sales:
+        out = SaleOut.model_validate(sale)
+        out.lines = by_sale[sale.id]
+        result.append(out)
+    return result

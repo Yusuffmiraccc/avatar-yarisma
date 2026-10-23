@@ -18,7 +18,7 @@ def build_demo(client, h, ship=(30, 25, 30)):
     markets = [mk_party(client, h, "customers", f"MKT-{c}", f"Market {c}", "MARKET") for c in "ABC"]
     suc = client.get("/api/v1/lots/by-code/SUC-2026-045", headers=h).json()
     ships = []
-    for m, q in zip(markets, ship):
+    for m, q in zip(markets, ship, strict=True):
         if q == 0:
             continue
         sh = client.post("/api/v1/shipments", headers=h, json={"shipment_code": f"SHP-{m['code']}", "customer_id": m["id"],

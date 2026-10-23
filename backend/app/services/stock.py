@@ -11,11 +11,11 @@ from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.errors import AppError, bad_request, conflict, not_found
+from app.core.errors import bad_request, conflict, not_found
 from app.models import InventoryBalance, Lot, LotBlock, StockMovement
 from app.models.types import utcnow
 
-ZERO = Decimal("0")
+ZERO = Decimal(0)
 # Bloke lotta da yapılabilen hareketler (imha, düzeltme, iade).
 BLOCKED_OK = {"ADJUSTMENT", "WASTE", "RETURN"}
 
@@ -45,6 +45,9 @@ def create_lot(db: Session, *, lot_code: str, product_id: int, quantity: Decimal
     product = db.get(Product, product_id)
     if product is None:
         raise not_found("Ürün", product_id)
+    if unit_code != product.base_unit_code:
+        raise bad_request("Birim ürün birimiyle uyuşmuyor; örtük dönüşüm yapılmaz.",
+                          {"expected": product.base_unit_code, "given": unit_code})
     if product.requires_expiry_date and expiry_date is None:
         raise bad_request("Bu ürün için son tüketim tarihi zorunludur.", {"field": "expiry_date"})
     if db.scalar(select(Lot.id).where(Lot.lot_code == lot_code)):

@@ -8,6 +8,7 @@ import sys
 
 from fastapi.testclient import TestClient
 
+from app.core.config import get_settings
 from app.db.session import SessionLocal
 from app.main import app
 from app.services.bootstrap import create_user, seed_reference
@@ -19,6 +20,8 @@ USERS = [("admin@avatar.demo", "Demo Yönetici", "ADMIN"), ("operator@avatar.dem
 
 
 def main() -> int:
+    if get_settings().environment.strip().lower() != "local":
+        raise RuntimeError("Demo seed yalnızca ENVIRONMENT=local ortamında çalıştırılabilir.")
     with SessionLocal() as db:
         seed_reference(db)
         for email, name, role in USERS:
@@ -63,7 +66,7 @@ def main() -> int:
     post(f"/production-orders/{o['id']}/complete", {"outputs": [{"product_id": sucuk["id"], "lot_code": "SUC-2026-045",
                                                                   "quantity": "85", "unit_code": "PACK"}]})
     suc = c.get("/api/v1/lots/by-code/SUC-2026-045", headers=h).json()
-    for m, q in zip(cust, (30, 25, 30)):
+    for m, q in zip(cust, (30, 25, 30), strict=True):
         sh = post("/shipments", {"shipment_code": f"SHP-2026-{m['code'][-1]}", "customer_id": m["id"],
                                  "lines": [{"lot_id": suc["id"], "quantity": str(q)}]})
         post(f"/shipments/{sh['id']}/dispatch", headers={"Idempotency-Key": f"seed-dispatch-{m['code']}"})
@@ -96,7 +99,7 @@ def main() -> int:
         cv = v["metrics"]["cross_validation"]
         print(k, v["model_name"], "n=", v["n_samples"], "iyileşme % (baseline'a göre):", cv["improvement_over_baseline_percent"])
     post("/alerts/scan")
-    print("Demo verisi hazır. Giriş: admin@avatar.demo /", DEMO_PASSWORD)
+    print("Demo verisi hazır. Giriş: admin@avatar.demo")
     return 0
 
 

@@ -11,11 +11,20 @@ from decimal import Decimal
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.models import (AnomalyAlert, ButcheringOrder, ButcheringWasteRecord, InventoryBalance, Lot, LotGenealogyEdge,
-                        ProductionInput, ProductionOrder, StockMovement)
+from app.models import (
+    AnomalyAlert,
+    ButcheringOrder,
+    ButcheringWasteRecord,
+    InventoryBalance,
+    Lot,
+    LotGenealogyEdge,
+    ProductionInput,
+    ProductionOrder,
+    StockMovement,
+)
 from app.services import alerts
 
-ZERO = Decimal("0")
+ZERO = Decimal(0)
 Z = 2.5
 MIN_HISTORY = 10
 

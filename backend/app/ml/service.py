@@ -3,8 +3,10 @@
 ML hataları operasyonu (stok/lot/recall) etkilemez: bu modül yalnızca okur ve ml_predictions'a yazar.
 """
 
+import contextlib
+import logging
 import os
-from datetime import datetime
+import threading
 from decimal import Decimal
 from pathlib import Path
 
@@ -13,20 +15,55 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
+from app.core.units import MASS_TO_KG
 from app.ml import modeling
-from app.models import (ButcheringOrder, ButcheringOutput, ButcheringWasteRecord, MlPrediction, Product,
-                        ProductionInput, ProductionOrder, ProductionServiceCost)
+from app.models import (
+    ButcheringOrder,
+    ButcheringOutput,
+    ButcheringWasteRecord,
+    MlPrediction,
+    Product,
+    ProductionInput,
+    ProductionOrder,
+    ProductionServiceCost,
+)
 from app.models.types import utcnow
 
-MASS_TO_KG = {"KG": 1.0, "G": 0.001}
+log = logging.getLogger(__name__)
+
 KIND_FILE = {"production_yield": "production_yield.joblib", "butchering_output": "butchering_output.joblib"}
 _cache: dict[str, tuple[float, dict]] = {}
+_train_thread_lock = threading.Lock()
 
 
 def _dir() -> Path:
     p = Path(get_settings().ml_dir)
     p.mkdir(parents=True, exist_ok=True)
+    if os.name != "nt":
+        p.chmod(0o700)
     return p
+
+
+@contextlib.contextmanager
+def _training_lock():
+    """Serialize training across threads and processes using an OS lock file."""
+    lock_path = _dir() / ".training.lock"
+    with _train_thread_lock, lock_path.open("a+b") as lock_file:
+        if os.name == "nt":
+            import msvcrt
+            lock_file.seek(0)
+            msvcrt.locking(lock_file.fileno(), msvcrt.LK_LOCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            if os.name == "nt":
+                lock_file.seek(0)
+                msvcrt.locking(lock_file.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
 
 def artifact(kind: str) -> dict | None:
@@ -45,18 +82,18 @@ def artifact(kind: str) -> dict | None:
 # ---- veri setleri ---------------------------------------------------------------------------------------------
 def _order_features(db: Session, order: ProductionOrder) -> dict | None:
     inputs = db.scalars(select(ProductionInput).where(ProductionInput.production_order_id == order.id)).all()
-    kg = {i.id: float(i.quantity) * MASS_TO_KG.get(i.unit_code, 0.0) for i in inputs}
+    kg = {i.id: float(i.quantity) * float(MASS_TO_KG.get(i.unit_code, 0)) for i in inputs}
     total_kg = sum(kg.values())
     if total_kg <= 0:
         return None
     main = max(kg.values())
-    input_cost = float(sum((i.total_cost for i in inputs), Decimal("0")))
+    input_cost = float(sum((i.total_cost for i in inputs), Decimal(0)))
     svc = db.scalars(select(ProductionServiceCost).where(ProductionServiceCost.production_order_id == order.id)).all()
     unit_prices = [float(s.unit_price) for s in svc if s.unit_price is not None]
     if unit_prices:
         svc_unit = sum(unit_prices)
     elif svc and order.planned_quantity:
-        svc_unit = float(sum((s.amount for s in svc), Decimal("0"))) / float(order.planned_quantity)
+        svc_unit = float(sum((s.amount for s in svc), Decimal(0))) / float(order.planned_quantity)
     else:
         svc_unit = 0.0
     when = order.completed_at or order.started_at or utcnow()
@@ -93,7 +130,7 @@ def _butchering_row(db: Session, o: ButcheringOrder) -> dict | None:
     row = {"order_id": o.id, "animal_type": o.animal_type, "input_weight": w}
     for out, prod in outs:
         row[f"r_{_target(prod.code)}"] = row.get(f"r_{_target(prod.code)}", 0.0) + float(out.actual_weight) / w
-    row["r_FIRE"] = float(sum((x.actual_weight for x in wastes), Decimal("0"))) / w
+    row["r_FIRE"] = float(sum((x.actual_weight for x in wastes), Decimal(0))) / w
     return row
 
 
@@ -110,17 +147,20 @@ def butchering_frame(db: Session) -> tuple[pd.DataFrame, list[str]]:
 
 # ---- eğitim ---------------------------------------------------------------------------------------------------
 def train_all(db: Session) -> dict:
-    out = {}
-    pdf = production_frame(db)
-    art = modeling.train_production(pdf)
-    modeling.save(art, str(_dir() / KIND_FILE["production_yield"]))
-    out["production_yield"] = summary(art)
-    bdf, targets = butchering_frame(db)
-    art = modeling.train_butchering(bdf, targets)
-    modeling.save(art, str(_dir() / KIND_FILE["butchering_output"]))
-    out["butchering_output"] = summary(art)
-    _cache.clear()
-    return out
+    # Training is synchronous and may block a request for minutes on a full dataset.
+    # A queue is intentionally deferred; the lock prevents parallel overwrite races.
+    with _training_lock():
+        out = {}
+        pdf = production_frame(db)
+        art = modeling.train_production(pdf)
+        modeling.save(art, str(_dir() / KIND_FILE["production_yield"]))
+        out["production_yield"] = summary(art)
+        bdf, targets = butchering_frame(db)
+        art = modeling.train_butchering(bdf, targets)
+        modeling.save(art, str(_dir() / KIND_FILE["butchering_output"]))
+        out["butchering_output"] = summary(art)
+        _cache.clear()
+        return out
 
 
 def summary(art: dict | None) -> dict | None:
@@ -156,7 +196,8 @@ def predict_production(db: Session, order: ProductionOrder, user_id: int) -> MlP
                        "model_name": art["model_name"]}
         pred.limitations_note = "; ".join(art["limitations"])[:1000]
     except Exception as e:  # ML hatası operasyonu bozmaz; kayıt FAILED olarak tutulur
-        pred.status, pred.detail = "FAILED", {"error": str(e)}
+        log.error("ML prediction failed kind=%s exception_type=%s", pred.prediction_type, type(e).__name__)
+        pred.status, pred.detail = "FAILED", {"message": "Tahmin üretilemedi."}
     db.add(pred)
     db.flush()
     refresh_actual(db, pred)
@@ -185,7 +226,8 @@ def predict_butchering(db: Session, animal_type: str, input_weight: Decimal, ord
             notes.append(f"'{animal_type}' eğitim verisinde yok: genel ortalama baseline kullanıldı.")
         pred.limitations_note = "; ".join(notes)[:1000]
     except Exception as e:
-        pred.status, pred.detail = "FAILED", {"error": str(e)}
+        log.error("ML prediction failed kind=%s exception_type=%s", pred.prediction_type, type(e).__name__)
+        pred.status, pred.detail = "FAILED", {"message": "Tahmin üretilemedi."}
     db.add(pred)
     db.flush()
     refresh_actual(db, pred)

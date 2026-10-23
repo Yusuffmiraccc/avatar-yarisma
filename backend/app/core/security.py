@@ -1,7 +1,7 @@
 import hashlib
 import secrets
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from jose import JWTError, jwt
 from pwdlib import PasswordHash
@@ -32,7 +32,7 @@ def hash_token(raw: str) -> str:
 
 def create_access_token(user_id: int, roles: list[str], token_version: int) -> tuple[str, int]:
     s = get_settings()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     exp = now + timedelta(minutes=s.access_token_minutes)
     payload = {
         "sub": str(user_id),

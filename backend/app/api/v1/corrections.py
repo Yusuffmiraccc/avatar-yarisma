@@ -2,16 +2,16 @@ from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from app.api.v1.catalog import lot_out
 from app.core.deps import DB, require
 from app.core.errors import request_id_of
 from app.models import Lot, ReworkOrder
 from app.schemas.butchering import ButcheringOrderOut
-from app.schemas.catalog import LotOut
-from app.schemas.common import ApiModel, Dec, Page, PageParams, paginate
+from app.schemas.common import ApiModel, Dec, Page, PageParams, paginate, redact_cost_data
 from app.schemas.production import ProductionOrderOut
 from app.schemas.sales import ShipmentOut
 from app.services import butchering as but_svc
@@ -81,11 +81,14 @@ def create_rework(body: ReworkIn, request: Request, db: DB, user=require("produc
                     output_product_id=body.output_product_id, output_lot_code=body.output_lot_code,
                     output_quantity=body.output_quantity, extra_cost=body.extra_cost, reason=body.reason,
                     user_id=user.id, request_id=request_id_of(request))
-    return rework_out(db, ro)
+    out = rework_out(db, ro)
+    content = jsonable_encoder(out) if "costs:read" in user.permissions else redact_cost_data(out)
+    return JSONResponse(status_code=201, content=content)
 
 
 @router.get("/rework-orders", response_model=Page[ReworkOut])
-def list_rework(db: DB, p: PP, _=require("production:read")):
+def list_rework(db: DB, p: PP, user=require("production:read")):
     res = paginate(db, select(ReworkOrder).order_by(ReworkOrder.id.desc()), p)
     res["items"] = [rework_out(db, r) for r in res["items"]]
-    return res
+    content = jsonable_encoder(res) if "costs:read" in user.permissions else redact_cost_data(res)
+    return JSONResponse(content=content)

@@ -1,16 +1,39 @@
-from datetime import datetime, timezone
-from decimal import Decimal
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, Request
-from sqlalchemy import func, or_, select
+from fastapi import APIRouter, Depends, Request
+from sqlalchemy import or_, select
 
-from app.core.deps import DB, CurrentUserDep, require
+from app.core.deps import DB, require
 from app.core.errors import bad_request, conflict, not_found, request_id_of
-from app.models import Customer, InventoryBalance, Lot, LotBlock, Product, ProductPrice, StockMovement, Supplier, Unit
+from app.models import (
+    Customer,
+    InventoryBalance,
+    Lot,
+    LotBlock,
+    Product,
+    ProductPrice,
+    StockMovement,
+    Supplier,
+    Unit,
+)
 from app.models.types import utcnow
-from app.schemas.catalog import (AdjustmentIn, CustomerOut, LotOut, LotReceiptIn, MovementOut, PartyIn, PartyPatch,
-                                 PriceIn, PriceOut, ProductIn, ProductOut, ProductPatch, SupplierOut, TransferIn, UnitOut)
+from app.schemas.catalog import (
+    AdjustmentIn,
+    CustomerOut,
+    LotOut,
+    LotReceiptIn,
+    MovementOut,
+    PartyIn,
+    PartyPatch,
+    PriceIn,
+    PriceOut,
+    ProductIn,
+    ProductOut,
+    ProductPatch,
+    SupplierOut,
+    TransferIn,
+    UnitOut,
+)
 from app.schemas.common import Page, PageParams, paginate
 from app.services import audit, stock
 from app.services import lots as lots_svc
@@ -28,15 +51,29 @@ def get_or_404(db, model, ident, what):
 PP = Annotated[PageParams, Depends()]
 
 
-def lot_out(db, lot: Lot, bal: InventoryBalance | None = None, product: Product | None = None) -> LotOut:
+def lot_out(db, lot: Lot, bal: InventoryBalance | None = None, product: Product | None = None,
+            include_cost: bool = False, is_blocked: bool | None = None) -> LotOut:
     bal = bal or db.get(InventoryBalance, lot.id)
     product = product or db.get(Product, lot.product_id)
     return LotOut(id=lot.id, lot_code=lot.lot_code, product_id=lot.product_id, product_code=product.code,
                   product_name=product.name, supplier_id=lot.supplier_id, lot_origin_type=lot.lot_origin_type,
                   status=lot.status, unit_code=lot.unit_code, initial_quantity=lot.initial_quantity,
-                  on_hand_quantity=bal.on_hand_quantity, unit_cost=lot.unit_cost, expiry_date=lot.expiry_date,
+                  on_hand_quantity=bal.on_hand_quantity, **({"unit_cost": lot.unit_cost} if include_cost else {}),
+                  expiry_date=lot.expiry_date,
                   received_at=lot.received_at, location_code=lot.location_code,
-                  is_blocked=stock.active_block(db, lot.id) is not None)
+                  is_blocked=(stock.active_block(db, lot.id) is not None) if is_blocked is None else is_blocked)
+
+
+def lot_out_many(db, lots: list[Lot], *, include_cost: bool = False) -> list[LotOut]:
+    if not lots:
+        return []
+    lot_ids = [lot.id for lot in lots]
+    product_ids = {lot.product_id for lot in lots}
+    balances = {row.lot_id: row for row in db.scalars(select(InventoryBalance).where(InventoryBalance.lot_id.in_(lot_ids)))}
+    products = {row.id: row for row in db.scalars(select(Product).where(Product.id.in_(product_ids)))}
+    blocked = set(db.scalars(select(LotBlock.lot_id).where(LotBlock.lot_id.in_(lot_ids), LotBlock.unblocked_at.is_(None))))
+    return [lot_out(db, lot, balances[lot.id], products[lot.product_id], include_cost, lot.id in blocked)
+            for lot in lots]
 
 
 # ---- birimler / ürünler ----------------------------------------------------------------------------
@@ -108,8 +145,11 @@ def add_price(product_id: int, body: PriceIn, db: DB, user=require("catalog:mana
 
 @router.get("/products/{product_id}/prices", response_model=list[PriceOut], tags=["catalog"])
 def list_prices(product_id: int, db: DB, _=require("catalog:read")):
-    return db.scalars(select(ProductPrice).where(ProductPrice.product_id == product_id)
-                      .order_by(ProductPrice.valid_from.desc())).all()
+    user = _
+    stmt = select(ProductPrice).where(ProductPrice.product_id == product_id)
+    if "costs:read" not in user.permissions:
+        stmt = stmt.where(ProductPrice.price_type == "SALE")
+    return db.scalars(stmt.order_by(ProductPrice.valid_from.desc())).all()
 
 
 # ---- tedarikçi / müşteri -------------------------------------------------------------------------------
@@ -168,18 +208,18 @@ def patch_customer(cid: int, body: PartyPatch, db: DB, _=require("catalog:manage
 
 
 # ---- lotlar ve stok ---------------------------------------------------------------------------------------
-@router.post("/lots/receipts", response_model=LotOut, status_code=201, tags=["inventory"])
+@router.post("/lots/receipts", response_model=LotOut, response_model_exclude_unset=True, status_code=201, tags=["inventory"])
 def receive_lot(body: LotReceiptIn, request: Request, db: DB, user=require("lots:receive")):
     lot, bal = lots_svc.receive(db, lot_code=body.lot_code, product_id=body.product_id, supplier_id=body.supplier_id,
                                 quantity=body.quantity, unit_code=body.unit_code, unit_cost=body.unit_cost,
                                 received_at=body.received_at, expiry_date=body.expiry_date, user_id=user.id,
                                 request_id=request_id_of(request))
-    return lot_out(db, lot, bal)
+    return lot_out(db, lot, bal, include_cost="costs:read" in user.permissions)
 
 
-@router.get("/lots", response_model=Page[LotOut], tags=["inventory"])
+@router.get("/lots", response_model=Page[LotOut], response_model_exclude_unset=True, tags=["inventory"])
 def list_lots(db: DB, p: PP, q: str | None = None, product_id: int | None = None, status: str | None = None,
-              in_stock: bool = False, sellable: bool = False, _=require("lots:read")):
+              in_stock: bool = False, sellable: bool = False, user=require("lots:read")):
     stmt = select(Lot).join(InventoryBalance, InventoryBalance.lot_id == Lot.id).order_by(Lot.id)
     if q:
         stmt = stmt.where(Lot.lot_code.ilike(f"%{q}%"))
@@ -192,24 +232,24 @@ def list_lots(db: DB, p: PP, q: str | None = None, product_id: int | None = None
     if sellable:  # Android: satılabilir lotlar (aktif blokajı olmayan)
         stmt = stmt.where(~select(LotBlock.id).where(LotBlock.lot_id == Lot.id, LotBlock.unblocked_at.is_(None)).exists())
     res = paginate(db, stmt, p)
-    res["items"] = [lot_out(db, lot) for lot in res["items"]]
+    res["items"] = lot_out_many(db, res["items"], include_cost="costs:read" in user.permissions)
     return res
 
 
-@router.get("/lots/{lot_id}", response_model=LotOut, tags=["inventory"])
-def get_lot(lot_id: int, db: DB, _=require("lots:read")):
+@router.get("/lots/{lot_id}", response_model=LotOut, response_model_exclude_unset=True, tags=["inventory"])
+def get_lot(lot_id: int, db: DB, user=require("lots:read")):
     lot = db.get(Lot, lot_id)
     if lot is None:
         raise not_found("Lot", lot_id)
-    return lot_out(db, lot)
+    return lot_out(db, lot, include_cost="costs:read" in user.permissions)
 
 
-@router.get("/lots/by-code/{lot_code}", response_model=LotOut, tags=["inventory"])
-def get_lot_by_code(lot_code: str, db: DB, _=require("lots:read")):
+@router.get("/lots/by-code/{lot_code}", response_model=LotOut, response_model_exclude_unset=True, tags=["inventory"])
+def get_lot_by_code(lot_code: str, db: DB, user=require("lots:read")):
     lot = db.scalar(select(Lot).where(Lot.lot_code == lot_code))
     if lot is None:
         raise not_found("Lot", lot_code)
-    return lot_out(db, lot)
+    return lot_out(db, lot, include_cost="costs:read" in user.permissions)
 
 
 @router.get("/inventory/movements", response_model=Page[MovementOut], tags=["inventory"])
@@ -240,7 +280,7 @@ def adjust(body: AdjustmentIn, request: Request, db: DB, user=require("inventory
     return MovementOut.model_validate(mv)
 
 
-@router.post("/inventory/transfers", response_model=LotOut, status_code=201, tags=["inventory"])
+@router.post("/inventory/transfers", response_model=LotOut, response_model_exclude_unset=True, status_code=201, tags=["inventory"])
 def transfer(body: TransferIn, request: Request, db: DB, user=require("inventory:adjust")):
     """Depo transferi: lot konumunu değiştirir; TRANSFER_OUT/TRANSFER_IN çifti ile lot bazında izlenir."""
     locked = stock.lock_lots(db, [body.lot_id])
@@ -257,4 +297,4 @@ def transfer(body: TransferIn, request: Request, db: DB, user=require("inventory
     lot.location_code = body.to_location
     audit.record(db, actor_id=user.id, action="LOT_TRANSFERRED", entity_type="lot", entity_id=lot.id,
                  details={"from": src, "to": body.to_location}, request_id=request_id_of(request))
-    return lot_out(db, lot, bal)
+    return lot_out(db, lot, bal, include_cost="costs:read" in user.permissions)

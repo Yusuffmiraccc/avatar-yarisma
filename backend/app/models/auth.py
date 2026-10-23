@@ -4,7 +4,7 @@ from sqlalchemy import Boolean, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
-from app.models.types import BigId, UtcDateTime, created_at, fk, pk, ts, updated_at
+from app.models.types import BigId, created_at, fk, pk, ts, updated_at
 
 
 class User(Base):

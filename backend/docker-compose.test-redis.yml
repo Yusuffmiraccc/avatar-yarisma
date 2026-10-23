@@ -1,0 +1,24 @@
+services:
+  # Isolated Redis instance for host-run pytest. Not part of normal `docker compose up`.
+  redis-test:
+    image: redis:7.4-alpine
+    command:
+      - redis-server
+      - --requirepass
+      - avatar-test-only
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+      - --maxmemory
+      - 128mb
+      - --maxmemory-policy
+      - noeviction
+    ports:
+      - "127.0.0.1:16379:6379"
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=avatar-test-only redis-cli ping | grep -qx PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: "no"

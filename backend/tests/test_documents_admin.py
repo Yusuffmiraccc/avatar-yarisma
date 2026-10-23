@@ -1,3 +1,6 @@
+from datetime import UTC, timedelta
+
+from app.models import Product
 from tests.helpers import mk_party, mk_product
 from tests.test_traceability_recall import build_demo
 
@@ -29,17 +32,34 @@ def test_extract_is_only_a_suggestion_until_human_approves(client, auth):
     assert doc["status"] == "PENDING_REVIEW" and p["document_number"] == "FTR-2026-0042" and p["document_date"] == "2026-10-15"
     assert p["supplier"]["matched"]["code"] == "SUP-1" and p["warnings"] == []
     l0 = p["lines"][0]
-    assert (l0["quantity"], l0["unit_code"], l0["unit_cost"], l0["lot_code"], l0["expiry_date"]) == ("100", "KG", "9.70", "ET-2026-001", "2026-11-30")
+    assert (l0["quantity"], l0["unit_code"], l0["lot_code"], l0["expiry_date"]) == ("100", "KG", "ET-2026-001", "2026-11-30")
+    assert "unit_cost" not in l0
     assert l0["product"]["code"] == "ET" and l0["flags"] == []
     assert client.get("/api/v1/lots", headers=admin).json()["total"] == 0  # onaydan önce kayıt YOK
 
+    costs = {"ET-2026-001": "9.70", "BAH-2026-001": "24.00", "BAG-2026-001": "11.60"}
     lines = [{"product_id": ln["product"]["id"], "lot_code": ln["lot_code"], "quantity": ln["quantity"], "unit_code": ln["unit_code"],
-              "unit_cost": ln["unit_cost"], "expiry_date": ln["expiry_date"]} for ln in p["lines"]]
+              "unit_cost": costs[ln["lot_code"]], "expiry_date": ln["expiry_date"]} for ln in p["lines"]]
     ok = client.post(f"/api/v1/documents/{doc['id']}/approve", headers=h, json={"supplier_id": sup["id"], "lines": lines})
     assert ok.status_code == 200 and ok.json()["status"] == "APPROVED" and len(ok.json()["resulting_lot_ids"]) == 3
     lot = client.get("/api/v1/lots/by-code/ET-2026-001", headers=h).json()
-    assert lot["on_hand_quantity"] == "100.000000" and lot["unit_cost"] == "9.7000" and lot["expiry_date"] == "2026-11-30"
+    assert lot["on_hand_quantity"] == "100.000000" and "unit_cost" not in lot and lot["expiry_date"] == "2026-11-30"
+    admin_lot = client.get("/api/v1/lots/by-code/ET-2026-001", headers=auth("ADMIN")).json()
+    assert admin_lot["unit_cost"] == "9.7000"
     assert client.post(f"/api/v1/documents/{doc['id']}/approve", headers=h, json={"lines": lines}).status_code == 409
+
+
+def test_document_purchase_costs_require_costs_read(client, auth):
+    admin = auth("ADMIN")
+    operator = auth("OPERATOR")
+    _catalog(client, admin)
+    response = client.post("/api/v1/documents/extract", headers=operator,
+                           json={"doc_type": "INVOICE", "text": INVOICE})
+    assert response.status_code == 201, response.text
+    doc = response.json()
+    assert all("unit_cost" not in line for line in doc["proposed"]["lines"])
+    full = client.get(f"/api/v1/documents/{doc['id']}", headers=admin).json()
+    assert any(line.get("unit_cost") is not None for line in full["proposed"]["lines"])
 
 
 def test_approval_is_atomic_and_flags_inconsistencies(client, auth):
@@ -107,3 +127,23 @@ def test_audit_events_filter_and_sync_catalog(client, auth):
     client.post(f"/api/v1/recalls/{rid}/activate", headers=h)
     s2 = client.get("/api/v1/sync/catalog", headers=auth("SALES")).json()
     assert s2["sellable_lots"] == [] and ctx["suc"]["id"] in s2["blocked_lot_ids"]
+
+
+def test_updated_after_normalizes_timezone_and_includes_boundary(client, auth, db):
+    h = auth("ADMIN")
+    product = mk_product(client, h, "TIME-BOUNDARY", "Sınır Zamanı")
+    created_at = db.get(Product, product["id"]).created_at
+    boundary = created_at.replace(tzinfo=UTC)
+    utc_value = boundary.isoformat().replace("+00:00", "Z")
+    offset_value = (boundary + timedelta(hours=3)).isoformat().replace("+00:00", "+03:00")
+    for value in (utc_value, boundary.replace(tzinfo=None).isoformat(), offset_value):
+        response = client.get("/api/v1/sync/catalog", headers=h, params={"updated_after": value})
+        assert response.status_code == 200
+        assert product["id"] in {item["id"] for item in response.json()["products"]}
+
+
+def test_extract_file_rejects_oversize_without_full_read(client, auth):
+    response = client.post("/api/v1/documents/extract-file", headers=auth("ADMIN"),
+                           files={"file": ("large.txt", b"x" * 5_000_001, "text/plain")})
+    assert response.status_code == 413
+    assert response.json()["error"]["code"] == "PAYLOAD_TOO_LARGE"

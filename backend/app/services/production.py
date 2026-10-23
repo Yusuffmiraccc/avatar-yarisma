@@ -3,16 +3,31 @@ from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.errors import bad_request, conflict, invalid_state, not_found
-from app.models import (Lot, LotGenealogyEdge, Product, ProductPrice, ProductionInput, ProductionOrder,
-                        ProductionOutput, ProductionServiceCost)
+from app.core.errors import bad_request, invalid_state, not_found
+from app.core.units import MASS_TO_KG
+from app.models import (
+    Lot,
+    LotGenealogyEdge,
+    Product,
+    ProductionInput,
+    ProductionOrder,
+    ProductionOutput,
+    ProductionServiceCost,
+    ProductPrice,
+)
 from app.models.types import utcnow
-from app.schemas.production import (CompleteIn, InputOut, OutputOut, ProductionInputIn, ProductionOrderOut,
-                                    ServiceCostIn, ServiceCostOut)
+from app.schemas.production import (
+    CompleteIn,
+    InputOut,
+    OutputOut,
+    ProductionInputIn,
+    ProductionOrderOut,
+    ServiceCostIn,
+    ServiceCostOut,
+)
 from app.services import audit, costing, stock
 
-ZERO = Decimal("0")
-MASS_TO_KG = {"KG": Decimal("1"), "G": Decimal("0.001")}
+ZERO = Decimal(0)
 
 
 def get_order(db: Session, order_id: int, *, lock: bool = False) -> ProductionOrder:
@@ -147,19 +162,49 @@ def complete(db: Session, order_id: int, body: CompleteIn, user_id: int, request
 
 
 def sale_price(db: Session, product_id: int):
+    now = utcnow()
     return db.scalar(select(ProductPrice).where(ProductPrice.product_id == product_id, ProductPrice.price_type == "SALE",
-                                               ProductPrice.valid_to.is_(None)).order_by(ProductPrice.valid_from.desc()))
+                                               ProductPrice.valid_from <= now,
+                                               (ProductPrice.valid_to.is_(None) | (ProductPrice.valid_to > now)))
+                     .order_by(ProductPrice.valid_from.desc()).limit(1))
+
+
+def to_out_many(db: Session, orders: list[ProductionOrder]) -> list[ProductionOrderOut]:
+    if not orders:
+        return []
+    ids = [o.id for o in orders]
+    inputs = db.scalars(select(ProductionInput).where(ProductionInput.production_order_id.in_(ids))
+                        .order_by(ProductionInput.id)).all()
+    services = db.scalars(select(ProductionServiceCost).where(ProductionServiceCost.production_order_id.in_(ids))
+                          .order_by(ProductionServiceCost.id)).all()
+    outputs = db.scalars(select(ProductionOutput).where(ProductionOutput.production_order_id.in_(ids))
+                         .order_by(ProductionOutput.id)).all()
+    lot_ids = {i.lot_id for i in inputs} | {o.lot_id for o in outputs}
+    codes = {l.id: l.lot_code for l in db.scalars(select(Lot).where(Lot.id.in_(lot_ids)))} if lot_ids else {}
+    product_ids = {o.product_id for o in outputs}
+    prices = {}
+    if product_ids:
+        for price in db.scalars(select(ProductPrice).where(ProductPrice.product_id.in_(product_ids),
+                ProductPrice.price_type == "SALE", ProductPrice.valid_from <= utcnow(),
+                (ProductPrice.valid_to.is_(None) | (ProductPrice.valid_to > utcnow())))
+                .order_by(ProductPrice.valid_from.desc())):
+            prices.setdefault(price.product_id, price)
+    by_input, by_service, by_output = {}, {}, {}
+    for row in inputs:
+        by_input.setdefault(row.production_order_id, []).append(row)
+    for row in services:
+        by_service.setdefault(row.production_order_id, []).append(row)
+    for row in outputs:
+        by_output.setdefault(row.production_order_id, []).append(row)
+    return [_to_out(db, order, by_input.get(order.id, []), by_service.get(order.id, []),
+                    by_output.get(order.id, []), codes, prices) for order in orders]
 
 
 def to_out(db: Session, order: ProductionOrder) -> ProductionOrderOut:
-    inputs = db.scalars(select(ProductionInput).where(ProductionInput.production_order_id == order.id)
-                        .order_by(ProductionInput.id)).all()
-    services = db.scalars(select(ProductionServiceCost).where(ProductionServiceCost.production_order_id == order.id)
-                          .order_by(ProductionServiceCost.id)).all()
-    outputs = db.scalars(select(ProductionOutput).where(ProductionOutput.production_order_id == order.id)
-                         .order_by(ProductionOutput.id)).all()
-    codes = {l.id: l.lot_code for l in db.scalars(select(Lot).where(Lot.id.in_(
-        [i.lot_id for i in inputs] + [o.lot_id for o in outputs])))} if inputs or outputs else {}
+    return to_out_many(db, [order])[0]
+
+
+def _to_out(db: Session, order: ProductionOrder, inputs, services, outputs, codes, prices) -> ProductionOrderOut:
     out = ProductionOrderOut.model_validate(order)
     out.inputs = [InputOut.model_validate(i).model_copy(update={"lot_code": codes.get(i.lot_id)}) for i in inputs]
     out.service_costs = [ServiceCostOut.model_validate(s) for s in services]
@@ -174,7 +219,7 @@ def to_out(db: Session, order: ProductionOrder) -> ProductionOrderOut:
     if order.unit_cost_ekp is not None:
         out.unit_cost_ekp_display = costing.display2(order.unit_cost_ekp)
         if outputs:
-            price = sale_price(db, outputs[0].product_id)
+            price = prices.get(outputs[0].product_id)
             if price is not None:
                 m = costing.margin(price.amount, order.unit_cost_ekp)
                 out.vkp = price.amount

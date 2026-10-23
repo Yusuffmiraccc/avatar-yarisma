@@ -1,6 +1,6 @@
 from decimal import Decimal as D
 
-from tests.helpers import mk_party, mk_product, receive
+from tests.helpers import mk_product, receive
 
 
 def setup_lamb(client, h, total="351.00", price="11.50", weight="25"):
@@ -41,7 +41,7 @@ def test_source_inconsistency_is_flagged_not_fixed(client, auth):
 
 def test_22kg_vs_25kg_requires_variance_approval(client, auth):
     h = auth("ADMIN")
-    oid, lot, p = setup_lamb(client, h)
+    oid, _, p = setup_lamb(client, h)
     r = client.post(f"/api/v1/butchering-orders/{oid}/complete", headers=h, json={"outputs": outs(p)})
     assert r.status_code == 409 and r.json()["error"]["code"] == "WEIGHT_VARIANCE_EXCEEDED"
     assert r.json()["error"]["details"]["difference"] == "3.000000"
@@ -62,9 +62,62 @@ def test_22kg_vs_25kg_requires_variance_approval(client, auth):
     assert client.get("/api/v1/lots/by-code/KUZU-BUT-001", headers=h).json()["on_hand_quantity"] == "12.000000"
 
 
+def test_output_heavier_than_input_requires_reason_and_approval(client, auth):
+    h = auth("ADMIN")
+    oid, _, products = setup_lamb(client, h)
+    outputs = outs(products, "13", "7", "6")  # çıktı 26 kg, girdi 25 kg
+    assert client.post(f"/api/v1/butchering-orders/{oid}/complete", headers=h, json={"outputs": outputs}).status_code == 409
+    body = {"outputs": outputs, "variance_reason": "Çıktı tartısı yeniden doğrulandı"}
+    assert client.post(f"/api/v1/butchering-orders/{oid}/complete", headers=auth("OPERATOR"), json=body).status_code == 403
+    result = client.post(f"/api/v1/butchering-orders/{oid}/complete", headers=h, json=body)
+    assert result.status_code == 200, result.text
+    assert result.json()["weight_difference"] == "-1.000000"
+    assert result.json()["variance"]["variance_weight"] == "-1.000000"
+    assert result.json()["variance"]["allocated_cost"] == "0.0000"
+
+
+def test_positive_weight_tolerance_accepts_boundary(client, auth, monkeypatch):
+    from types import SimpleNamespace
+
+    from app.services import butchering as svc
+    monkeypatch.setattr(svc, "get_settings", lambda: SimpleNamespace(weight_tolerance_kg="1.000"))
+    h = auth("ADMIN")
+    oid, _, products = setup_lamb(client, h)
+    result = client.post(f"/api/v1/butchering-orders/{oid}/complete", headers=h,
+                         json={"outputs": outs(products, "10", "8", "6")})
+    assert result.status_code == 200, result.text
+    assert result.json()["weight_difference"] == "1.000000"
+    assert result.json()["variance"]["tolerance_weight"] == "1.000000"
+
+
+def test_positive_weight_tolerance_rejects_value_outside_boundary(client, auth, monkeypatch):
+    from types import SimpleNamespace
+
+    from app.services import butchering as svc
+    monkeypatch.setattr(svc, "get_settings", lambda: SimpleNamespace(weight_tolerance_kg="1.000"))
+    h = auth("ADMIN")
+    oid, lot, products = setup_lamb(client, h)
+    result = client.post(f"/api/v1/butchering-orders/{oid}/complete", headers=h,
+                         json={"outputs": outs(products, "10", "8", "5")})
+    assert result.status_code == 409 and result.json()["error"]["code"] == "WEIGHT_VARIANCE_EXCEEDED"
+    assert client.get(f"/api/v1/lots/{lot['id']}", headers=h).json()["on_hand_quantity"] == "25.000000"
+
+
+def test_butchering_output_unit_must_match_product_base_unit(client, auth):
+    h = auth("ADMIN")
+    oid, lot, products = setup_lamb(client, h)
+    outputs = outs(products)
+    outputs[0]["unit_code"] = "PACK"
+    result = client.post(f"/api/v1/butchering-orders/{oid}/complete", headers=h,
+                         json={"outputs": outputs, "variance_reason": "Birim tutarlılığı regresyon denetimi"})
+    assert result.status_code == 400
+    assert client.get(f"/api/v1/lots/{lot['id']}", headers=h).json()["on_hand_quantity"] == "25.000000"
+    assert client.get(f"/api/v1/butchering-orders/{oid}", headers=h).json()["status"] == "IN_PROGRESS"
+
+
 def test_waste_closes_balance_no_stock_in_and_cost_shared(client, auth):
     h = auth("ADMIN")
-    oid, lot, p = setup_lamb(client, h)
+    oid, _, p = setup_lamb(client, h)
     r = client.post(f"/api/v1/butchering-orders/{oid}/waste-records", headers=h,
                     json={"actual_weight": "3", "reason_code": "BONE_WASTE"})
     assert r.status_code == 201
@@ -105,14 +158,14 @@ def test_by_value_fails_closed_without_waste_valuation(client, auth):
 
 def test_recipe_expected_vs_actual(client, auth):
     h = auth("ADMIN")
-    oid, lot, p = setup_lamb(client, h, total="287.50")
+    oid, _, p = setup_lamb(client, h, total="287.50")
     r = client.put("/api/v1/butchering-recipes/KUZU", headers=h, json={"lines": [
         {"product_id": p["but"]["id"], "output_type": "CUT", "expected_ratio": "0.4"},
         {"product_id": p["sirt"]["id"], "output_type": "CUT", "expected_ratio": "0.3"},
         {"product_id": p["omuz"]["id"], "output_type": "CUT", "expected_ratio": "0.2"}]})
     assert r.status_code == 200 and r.json()["ratio_sum"] == "0.900000"
-    waste = client.post(f"/api/v1/butchering-orders/{oid}/waste-records", headers=h,
-                        json={"actual_weight": "3", "reason_code": "BONE_WASTE"})
+    client.post(f"/api/v1/butchering-orders/{oid}/waste-records", headers=h,
+                json={"actual_weight": "3", "reason_code": "BONE_WASTE"})
     r = client.post(f"/api/v1/butchering-orders/{oid}/complete", headers=h, json={"outputs": outs(p)})
     assert r.status_code == 200, r.text
     but = [o for o in r.json()["outputs"] if o["lot_code"] == "KUZU-BUT-001"][0]

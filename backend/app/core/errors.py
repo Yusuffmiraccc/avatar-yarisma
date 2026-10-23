@@ -1,4 +1,5 @@
 import logging
+import re
 from uuid import uuid4
 
 from fastapi import FastAPI, Request
@@ -16,6 +17,7 @@ HTTP_CODES = {
     404: "NOT_FOUND",
     405: "METHOD_NOT_ALLOWED",
     409: "CONFLICT",
+    413: "PAYLOAD_TOO_LARGE",
     429: "RATE_LIMITED",
 }
 
@@ -59,10 +61,16 @@ def _envelope(request: Request, status: int, code: str, message: str, details=No
 
 class RequestIdMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        request.state.request_id = request.headers.get("X-Request-ID") or str(uuid4())
+        supplied = request.headers.get("X-Request-ID", "")
+        request.state.request_id = validated_request_id(supplied)
         response = await call_next(request)
         response.headers["X-Request-ID"] = request.state.request_id
         return response
+
+
+def validated_request_id(supplied: str) -> str:
+    """Accept short, printable correlation IDs only; otherwise issue a server UUID."""
+    return supplied if re.fullmatch(r"[A-Za-z0-9._:-]{1,128}", supplied) else str(uuid4())
 
 
 def register_error_handlers(app: FastAPI) -> None:
