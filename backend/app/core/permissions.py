@@ -25,7 +25,7 @@ _READ = {
 ROLE_PERMISSIONS: dict[str, frozenset[str]] = {
     "ADMIN": ALL_PERMISSIONS,
     "OPERATOR": frozenset(
-        _READ | {"lots:receive", "inventory:adjust", "production:manage", "butchering:manage", "ai:read", "ai:run",
+        _READ | {"lots:receive", "inventory:adjust", "production:manage", "butchering:manage", "ai:read", "ai:run", "costs:read",
                  "documents:manage"}
     ),
     "SALES": frozenset(

@@ -8,7 +8,7 @@ from app.models.butchering import (
     ButcheringWasteRecord,
     WeightVarianceRecord,
 )
-from app.models.catalog import Customer, Product, ProductPrice, Supplier, Unit, UnitConversion
+from app.models.catalog import Customer, Product, ProductPrice, Supplier, Unit
 from app.models.inventory import (
     InventoryBalance,
     Lot,
@@ -61,7 +61,6 @@ __all__ = [
     "StockMovement",
     "Supplier",
     "Unit",
-    "UnitConversion",
     "User",
     "UserRole",
     "WeightVarianceRecord",

@@ -708,7 +708,6 @@
             "title": "Declared Unit Price"
           },
           "findings": {
-            "default": [],
             "items": {
               "$ref": "#/components/schemas/Finding"
             },
@@ -728,7 +727,6 @@
             "type": "string"
           },
           "inputs": {
-            "default": [],
             "items": {
               "$ref": "#/components/schemas/BInputOut"
             },
@@ -751,7 +749,6 @@
             "type": "string"
           },
           "outputs": {
-            "default": [],
             "items": {
               "$ref": "#/components/schemas/BOutputOut"
             },
@@ -834,7 +831,6 @@
             "title": "Waste Cost Total"
           },
           "waste_records": {
-            "default": [],
             "items": {
               "$ref": "#/components/schemas/WasteOut"
             },
@@ -1283,7 +1279,6 @@
             "type": "string"
           },
           "second_tier": {
-            "default": [],
             "items": {},
             "title": "Second Tier",
             "type": "array"
@@ -2998,11 +2993,6 @@
             "title": "Code",
             "type": "string"
           },
-          "is_lot_tracked": {
-            "default": true,
-            "title": "Is Lot Tracked",
-            "type": "boolean"
-          },
           "name": {
             "maxLength": 160,
             "minLength": 1,
@@ -3052,10 +3042,6 @@
             "title": "Is Active",
             "type": "boolean"
           },
-          "is_lot_tracked": {
-            "title": "Is Lot Tracked",
-            "type": "boolean"
-          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -3087,7 +3073,6 @@
           "name",
           "product_type",
           "base_unit_code",
-          "is_lot_tracked",
           "requires_expiry_date",
           "is_active"
         ],
@@ -3299,7 +3284,6 @@
             "title": "Input Mass Kg"
           },
           "inputs": {
-            "default": [],
             "items": {
               "$ref": "#/components/schemas/InputOut"
             },
@@ -3333,7 +3317,6 @@
             "type": "string"
           },
           "outputs": {
-            "default": [],
             "items": {
               "$ref": "#/components/schemas/OutputOut"
             },
@@ -3401,7 +3384,6 @@
             "title": "Reversed At"
           },
           "service_costs": {
-            "default": [],
             "items": {
               "$ref": "#/components/schemas/ServiceCostOut"
             },
@@ -3647,7 +3629,6 @@
             "type": "integer"
           },
           "impacts": {
-            "default": [],
             "items": {
               "$ref": "#/components/schemas/ImpactOut"
             },
@@ -3655,7 +3636,6 @@
             "type": "array"
           },
           "lots": {
-            "default": [],
             "items": {
               "$ref": "#/components/schemas/RecallLotOut"
             },
@@ -4055,6 +4035,19 @@
             "title": "Lot Id",
             "type": "integer"
           },
+          "override_reason": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "minLength": 5,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Override Reason"
+          },
           "quantity": {
             "anyOf": [
               {
@@ -4180,7 +4173,6 @@
             "type": "integer"
           },
           "lines": {
-            "default": [],
             "items": {
               "$ref": "#/components/schemas/SaleLineOut"
             },
@@ -4585,7 +4577,6 @@
             "type": "integer"
           },
           "lines": {
-            "default": [],
             "items": {
               "$ref": "#/components/schemas/ShipmentLineOut"
             },

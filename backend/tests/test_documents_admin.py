@@ -33,7 +33,6 @@ def test_extract_is_only_a_suggestion_until_human_approves(client, auth):
     assert p["supplier"]["matched"]["code"] == "SUP-1" and p["warnings"] == []
     l0 = p["lines"][0]
     assert (l0["quantity"], l0["unit_code"], l0["lot_code"], l0["expiry_date"]) == ("100", "KG", "ET-2026-001", "2026-11-30")
-    assert "unit_cost" not in l0
     assert l0["product"]["code"] == "ET" and l0["flags"] == []
     assert client.get("/api/v1/lots", headers=admin).json()["total"] == 0  # onaydan önce kayıt YOK
 
@@ -43,13 +42,13 @@ def test_extract_is_only_a_suggestion_until_human_approves(client, auth):
     ok = client.post(f"/api/v1/documents/{doc['id']}/approve", headers=h, json={"supplier_id": sup["id"], "lines": lines})
     assert ok.status_code == 200 and ok.json()["status"] == "APPROVED" and len(ok.json()["resulting_lot_ids"]) == 3
     lot = client.get("/api/v1/lots/by-code/ET-2026-001", headers=h).json()
-    assert lot["on_hand_quantity"] == "100.000000" and "unit_cost" not in lot and lot["expiry_date"] == "2026-11-30"
+    assert lot["on_hand_quantity"] == "100.000000" and lot["unit_cost"] == "9.7000" and lot["expiry_date"] == "2026-11-30"
     admin_lot = client.get("/api/v1/lots/by-code/ET-2026-001", headers=auth("ADMIN")).json()
     assert admin_lot["unit_cost"] == "9.7000"
     assert client.post(f"/api/v1/documents/{doc['id']}/approve", headers=h, json={"lines": lines}).status_code == 409
 
 
-def test_document_purchase_costs_require_costs_read(client, auth):
+def test_operator_sees_document_purchase_costs(client, auth):
     admin = auth("ADMIN")
     operator = auth("OPERATOR")
     _catalog(client, admin)
@@ -57,9 +56,7 @@ def test_document_purchase_costs_require_costs_read(client, auth):
                            json={"doc_type": "INVOICE", "text": INVOICE})
     assert response.status_code == 201, response.text
     doc = response.json()
-    assert all("unit_cost" not in line for line in doc["proposed"]["lines"])
-    full = client.get(f"/api/v1/documents/{doc['id']}", headers=admin).json()
-    assert any(line.get("unit_cost") is not None for line in full["proposed"]["lines"])
+    assert any(line.get("unit_cost") is not None for line in doc["proposed"]["lines"])
 
 
 def test_approval_is_atomic_and_flags_inconsistencies(client, auth):
