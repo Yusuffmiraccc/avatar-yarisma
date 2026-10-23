@@ -151,16 +151,40 @@ def train_all(db: Session) -> dict:
     # A queue is intentionally deferred; the lock prevents parallel overwrite races.
     with _training_lock():
         out = {}
-        pdf = production_frame(db)
-        art = modeling.train_production(pdf)
-        modeling.save(art, str(_dir() / KIND_FILE["production_yield"]))
-        out["production_yield"] = summary(art)
+        art = modeling.train_production(production_frame(db))
+        out["production_yield"] = _promote("production_yield", art)
         bdf, targets = butchering_frame(db)
         art = modeling.train_butchering(bdf, targets)
-        modeling.save(art, str(_dir() / KIND_FILE["butchering_output"]))
-        out["butchering_output"] = summary(art)
+        out["butchering_output"] = _promote("butchering_output", art)
         _cache.clear()
         return out
+
+
+def _score(art: dict | None) -> float | None:
+    """Improvement over baseline (%) of the first metric; None when the model has no measured metric."""
+    try:
+        imp = art["metrics"]["cross_validation"]["improvement_over_baseline_percent"]
+        return next(iter(imp.values()))
+    except (TypeError, KeyError, StopIteration):
+        return None
+
+
+def _promote(kind: str, candidate: dict) -> dict | None:
+    """Replace the active model only when the candidate is not worse; otherwise keep the active one."""
+    path = _dir() / KIND_FILE[kind]
+    try:
+        active = modeling.load(str(path)) if path.exists() else None
+    except ValueError:  # unsigned or tampered artifact must not block retraining
+        active = None
+    new, old = _score(candidate), _score(active)
+    # shortcut: compares CV improvement over each model's own baseline, not both on one holdout; upgrade when
+    # real history is large enough for a shared holdout.
+    if new is not None and old is not None and new < old:
+        out = summary(active)
+        out["candidate_rejected"] = {"candidate_improvement_percent": new, "active_improvement_percent": old}
+        return out
+    modeling.save(candidate, str(path))
+    return summary(candidate)
 
 
 def summary(art: dict | None) -> dict | None:
