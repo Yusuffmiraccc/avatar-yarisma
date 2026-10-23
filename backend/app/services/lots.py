@@ -18,8 +18,6 @@ def receive(db: Session, *, lot_code: str, product_id: int, supplier_id: int | N
         raise not_found("Ürün", product_id)
     if quantity <= 0 or unit_cost < 0:
         raise bad_request("Miktar pozitif, birim maliyet negatif olmayan bir değer olmalıdır.")
-    if unit_code != prod.base_unit_code:
-        raise bad_request("Birim ürün birimiyle uyuşmuyor; örtük dönüşüm yapılmaz.", {"expected": prod.base_unit_code})
     if supplier_id is not None and db.get(Supplier, supplier_id) is None:
         raise not_found("Tedarikçi", supplier_id)
     lot = stock.create_lot(db, lot_code=lot_code, product_id=product_id, quantity=quantity, unit_code=unit_code,

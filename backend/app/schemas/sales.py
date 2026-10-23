@@ -9,6 +9,7 @@ class SaleLineIn(BaseModel):
     lot_id: int
     quantity: Dec
     unit_price: Dec | None = None  # verilmezse ürünün geçerli SALE fiyatı kullanılır
+    override_reason: str | None = Field(default=None, min_length=5, max_length=500)
 
 
 class SaleIn(BaseModel):
@@ -39,7 +40,7 @@ class SaleOut(ApiModel):
     sold_at: datetime
     currency_code: str
     total_amount: Dec
-    lines: list[SaleLineOut] = []
+    lines: list[SaleLineOut] = Field(default_factory=list)
 
 
 class ShipmentLineIn(BaseModel):
@@ -73,4 +74,4 @@ class ShipmentOut(ApiModel):
     status: str
     shipped_at: datetime | None = None
     notes: str | None = None
-    lines: list[ShipmentLineOut] = []
+    lines: list[ShipmentLineOut] = Field(default_factory=list)

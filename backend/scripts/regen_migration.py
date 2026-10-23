@@ -25,11 +25,13 @@ def main() -> None:
         os.remove(f)
     run("revision", "--autogenerate", "-m", "initial schema")
     path = glob.glob("migrations/versions/*_initial_schema.py")[0]
-    src = open(path, encoding="utf-8").read()
+    with open(path, encoding="utf-8") as migration_file:
+        src = migration_file.read()
     head, down = src.split("def downgrade()")
     # MySQL: FK'nin ihtiyaç duyduğu indeks tablodan önce düşürülemez; drop_table indeksleri zaten siler.
-    down = re.sub(r"^\s*op\.drop_index\(.*?\)\n", "", down, flags=re.M)
-    open(path, "w", encoding="utf-8").write(head + "def downgrade()" + down)
+    down = re.sub(r"^\s*op\.drop_index\(.*?\)\n", "", down, flags=re.MULTILINE)
+    with open(path, "w", encoding="utf-8") as migration_file:
+        migration_file.write(head + "def downgrade()" + down)
     run("upgrade", "head")
     print("OK", path)
 

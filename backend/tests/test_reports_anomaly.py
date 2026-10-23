@@ -7,7 +7,7 @@ from tests.test_traceability_recall import build_demo
 
 def test_reports_dashboard_costs_stock_and_notification_list(client, auth):
     h = auth("ADMIN")
-    ctx = build_demo(client, h)
+    build_demo(client, h)
     rid = client.post("/api/v1/recalls", headers=h, json={"recall_code": "R-1", "reason_code": "QUALITY",
                       "lot_codes": ["ET-2026-001"]}).json()["id"]
     client.post(f"/api/v1/recalls/{rid}/activate", headers=h)

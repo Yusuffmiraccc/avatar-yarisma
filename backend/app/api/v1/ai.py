@@ -1,8 +1,8 @@
 from datetime import datetime
-from decimal import Decimal
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
+from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
@@ -12,7 +12,7 @@ from app.core.errors import bad_request, not_found
 from app.ml import service as ml
 from app.ml import synthetic
 from app.models import ButcheringOrder, MlPrediction, ProductionOrder
-from app.schemas.common import ApiModel, Dec, Page, PageParams, paginate
+from app.schemas.common import ApiModel, Dec, Page, PageParams, paginate, redact_cost_data
 
 router = APIRouter(prefix="/ai", tags=["ai"])
 PP = Annotated[PageParams, Depends()]
@@ -54,13 +54,17 @@ class SyntheticIn(BaseModel):
     butchering_orders: int = Field(default=150, ge=0, le=1000)
 
 
-def _respond(pred: MlPrediction):
+def _respond(pred: MlPrediction, user):
     out = PredictionOut.model_validate(pred)
+    content = jsonable_encoder(out)
+    if pred.status == "FAILED":
+        content["detail"] = {"message": "Tahmin üretilemedi."}
+    if "costs:read" not in user.permissions:
+        content = redact_cost_data(content)
     if pred.status == "FAILED":  # ML arızası yalnızca bu uç noktayı etkiler; operasyon akışları çalışır
         return JSONResponse(status_code=503, content={"error": {"code": "MODEL_NOT_AVAILABLE",
-                            "message": "Tahmin üretilemedi.", "details": pred.detail},
-                            "prediction": out.model_dump(mode="json")})
-    return out
+                            "message": "Tahmin üretilemedi."}, "prediction": content})
+    return JSONResponse(content=content)
 
 
 @router.post("/synthetic-data")
@@ -86,7 +90,7 @@ def predict_production(body: ProductionPredictIn, db: DB, user=require("ai:run")
     order = db.get(ProductionOrder, body.production_order_id)
     if order is None:
         raise not_found("Üretim emri", body.production_order_id)
-    return _respond(ml.predict_production(db, order, user.id))
+    return _respond(ml.predict_production(db, order, user.id), user)
 
 
 @router.post("/butchering-output/predict", response_model=PredictionOut)
@@ -101,24 +105,35 @@ def predict_butchering(body: ButcheringPredictIn, db: DB, user=require("ai:run")
         animal, weight = body.animal_type, body.input_weight
     else:
         raise bad_request("butchering_order_id veya animal_type + input_weight verilmelidir.")
-    return _respond(ml.predict_butchering(db, animal, weight, order, user.id))
+    return _respond(ml.predict_butchering(db, animal, weight, order, user.id), user)
 
 
 @router.get("/predictions", response_model=Page[PredictionOut])
-def list_predictions(db: DB, p: PP, prediction_type: str | None = None, _=require("ai:read")):
+def list_predictions(db: DB, p: PP, prediction_type: str | None = None, user=require("ai:read")):
     stmt = select(MlPrediction).order_by(MlPrediction.id.desc())
     if prediction_type:
         stmt = stmt.where(MlPrediction.prediction_type == prediction_type)
     res = paginate(db, stmt, p)
     for pr in res["items"]:
         ml.refresh_actual(db, pr)
-    return res
+    content = jsonable_encoder(res)
+    for item, pr in zip(content["items"], res["items"], strict=True):
+        if pr.status == "FAILED":
+            item["detail"] = {"message": "Tahmin üretilemedi."}
+    if "costs:read" not in user.permissions:
+        content = redact_cost_data(content)
+    return JSONResponse(content=content)
 
 
 @router.get("/predictions/{prediction_id}", response_model=PredictionOut)
-def get_prediction(prediction_id: int, db: DB, _=require("ai:read")):
+def get_prediction(prediction_id: int, db: DB, user=require("ai:read")):
     pr = db.get(MlPrediction, prediction_id)
     if pr is None:
         raise not_found("Tahmin", prediction_id)
     ml.refresh_actual(db, pr)
-    return pr
+    content = jsonable_encoder(PredictionOut.model_validate(pr))
+    if pr.status == "FAILED":
+        content["detail"] = {"message": "Tahmin üretilemedi."}
+    if "costs:read" not in user.permissions:
+        content = redact_cost_data(content)
+    return JSONResponse(content=content)

@@ -9,14 +9,24 @@ from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.errors import AppError, bad_request, conflict, invalid_state, not_found
-from app.models import (ButcheringOrder, ButcheringOutput, InventoryBalance, Lot, LotGenealogyEdge, ProductionOrder,
-                        ProductionOutput, ReworkOrder, Sale, Shipment, ShipmentLine, StockMovement)
+from app.core.errors import bad_request, conflict, invalid_state, not_found
+from app.models import (
+    ButcheringOrder,
+    ButcheringOutput,
+    Lot,
+    LotGenealogyEdge,
+    ProductionOrder,
+    ProductionOutput,
+    ReworkOrder,
+    Sale,
+    Shipment,
+    ShipmentLine,
+    StockMovement,
+)
 from app.models.types import utcnow
-from app.schemas.sales import ShipmentOut
 from app.services import audit, costing, stock
 
-ZERO = Decimal("0")
+ZERO = Decimal(0)
 
 
 def _movements(db: Session, source_type: str, source_id: int) -> list[StockMovement]:

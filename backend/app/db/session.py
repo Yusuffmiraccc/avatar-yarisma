@@ -1,9 +1,11 @@
 from collections.abc import Iterator
 
 from sqlalchemy import create_engine
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import get_settings
+from app.core.errors import AppError
 
 settings = get_settings()
 engine = create_engine(settings.database_url, pool_pre_ping=True, pool_recycle=1800, future=True,
@@ -17,8 +19,25 @@ def get_db() -> Iterator[Session]:
     try:
         yield db
         db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        if _is_unique_violation(exc):
+            raise AppError(409, "CONFLICT", "Benzersiz kayıt çakışması.") from exc
+        raise
     except BaseException:
         db.rollback()
         raise
     finally:
         db.close()
+
+
+def _is_unique_violation(exc: IntegrityError) -> bool:
+    orig = exc.orig
+    code = getattr(orig, "sqlstate", None) or getattr(orig, "pgcode", None)
+    if code == "23505":
+        return True
+    args = getattr(orig, "args", ())
+    if args and args[0] == 1062:  # MySQL duplicate entry
+        return True
+    message = str(orig).lower()
+    return "unique constraint failed" in message or "duplicate key" in message

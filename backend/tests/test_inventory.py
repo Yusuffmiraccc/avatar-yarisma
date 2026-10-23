@@ -39,6 +39,64 @@ def test_permissions_deny_by_default(client, auth):
     assert client.get("/api/v1/products", headers=auth("VIEWER")).status_code == 200
 
 
+def test_lot_cost_and_purchase_prices_require_cost_permission(client, auth):
+    admin = auth("ADMIN")
+    product = mk_product(client, admin, "COST-ET", "Maliyet Test Eti")
+    lot = receive(client, admin, "COST-LOT", product, 10, 5)
+    assert "unit_cost" in lot and lot["unit_cost"] == "5.0000"
+
+    for role in ("OPERATOR", "SALES", "VIEWER"):
+        headers = auth(role)
+        assert "unit_cost" not in client.get("/api/v1/lots", headers=headers).json()["items"][0]
+        assert "unit_cost" not in client.get(f"/api/v1/lots/{lot['id']}", headers=headers).json()
+        assert "unit_cost" not in client.get(f"/api/v1/lots/by-code/{lot['lot_code']}", headers=headers).json()
+
+    received = client.post("/api/v1/lots/receipts", headers=auth("OPERATOR"), json={
+        "lot_code": "COST-LOT-2", "product_id": product["id"], "quantity": "1", "unit_code": "KG", "unit_cost": "6"})
+    assert received.status_code == 201 and "unit_cost" not in received.json()
+    transferred = client.post("/api/v1/inventory/transfers", headers=auth("OPERATOR"), json={
+        "lot_id": lot["id"], "quantity": "10", "to_location": "WH-2"})
+    assert transferred.status_code == 201 and "unit_cost" not in transferred.json()
+
+    recall = client.post("/api/v1/recalls", headers=admin, json={
+        "recall_code": "COST-RECALL", "reason_code": "QUALITY", "lot_codes": [lot["lot_code"]]})
+    assert recall.status_code == 201
+    recall_id = recall.json()["id"]
+    assert client.post(f"/api/v1/recalls/{recall_id}/activate", headers=admin).status_code == 200
+    assert client.post(f"/api/v1/recalls/{recall_id}/resolve", headers=admin).status_code == 200
+    unblocked = client.post(f"/api/v1/lots/{lot['id']}/unblock", headers=auth("TRACEABILITY_MANAGER"),
+                            json={"reason": "Kalite incelemesi tamamlandı"})
+    assert unblocked.status_code == 200 and "unit_cost" not in unblocked.json()
+
+    assert client.post(f"/api/v1/products/{product['id']}/prices", headers=admin,
+                       json={"price_type": "PURCHASE", "amount": "4", "unit_code": "KG"}).status_code == 201
+    assert client.post(f"/api/v1/products/{product['id']}/prices", headers=admin,
+                       json={"price_type": "SALE", "amount": "8", "unit_code": "KG"}).status_code == 201
+    prices = client.get(f"/api/v1/products/{product['id']}/prices", headers=auth("SALES")).json()
+    assert [price["price_type"] for price in prices] == ["SALE"]
+    assert {price["price_type"] for price in client.get(
+        f"/api/v1/products/{product['id']}/prices", headers=admin).json()} == {"PURCHASE", "SALE"}
+
+
+def test_sync_catalog_hides_lot_cost_from_sales(client, auth):
+    admin = auth("ADMIN")
+    product = mk_product(client, admin, "SYNC-COST", "Sync Maliyet")
+    receive(client, admin, "SYNC-COST-LOT", product, 10, 5)
+    sales_lot = client.get("/api/v1/sync/catalog", headers=auth("SALES")).json()["sellable_lots"][0]
+    assert "unit_cost" not in sales_lot
+    admin_lot = client.get("/api/v1/sync/catalog", headers=admin).json()["sellable_lots"][0]
+    assert admin_lot["unit_cost"] == "5.0000"
+
+
+def test_receipt_unit_must_match_product_base_unit(client, auth):
+    product = mk_product(client, auth("ADMIN"), "UNIT-ET", "Birim Kontrol Eti")
+    response = client.post("/api/v1/lots/receipts", headers=auth("ADMIN"), json={
+        "lot_code": "UNIT-MISMATCH", "product_id": product["id"], "quantity": "1", "unit_code": "PACK",
+        "unit_cost": "1"})
+    assert response.status_code == 400
+    assert response.json()["error"]["details"]["expected"] == "KG"
+
+
 def test_adjustment_and_insufficient_stock(client, auth):
     h = auth("ADMIN")
     p = mk_product(client, h, "ET", "Et")

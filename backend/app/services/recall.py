@@ -4,11 +4,11 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.errors import bad_request, conflict, invalid_state, not_found
-from app.models import (Customer, Lot, LotBlock, Recall, RecallCustomerImpact, RecallLot)
+from app.models import Lot, LotBlock, Recall, RecallCustomerImpact, RecallLot
 from app.models.types import utcnow
 from app.services import audit, stock, traceability
 
-ZERO = Decimal("0")
+ZERO = Decimal(0)
 
 
 def get_recall(db: Session, rid: int, *, lock: bool = False) -> Recall:
@@ -66,13 +66,18 @@ def activate(db: Session, rid: int, user_id: int, request_id: str | None) -> Rec
         stock.lock_lots(db, [n.lot_id for n in res.lots])  # kilit sırasında yeni türev lot çıktıysa onları da kilitle
         res = traceability.forward(db, origins)
     now = utcnow()
+    affected_ids = [node.lot_id for node in res.lots]
+    existing_recall_lots = {row.lot_id: row for row in db.scalars(select(RecallLot).where(
+        RecallLot.recall_id == recall.id, RecallLot.lot_id.in_(affected_ids)))}
+    active_block_ids = set(db.scalars(select(LotBlock.lot_id).where(
+        LotBlock.lot_id.in_(affected_ids), LotBlock.unblocked_at.is_(None))))
     for n in res.lots:
         if n.role == "DERIVED":
             db.add(RecallLot(recall_id=recall.id, lot_id=n.lot_id, role="DERIVED", blocked_at=now))
         else:
-            rl = db.scalar(select(RecallLot).where(RecallLot.recall_id == recall.id, RecallLot.lot_id == n.lot_id))
+            rl = existing_recall_lots[n.lot_id]
             rl.blocked_at = now
-        if stock.active_block(db, n.lot_id) is None:
+        if n.lot_id not in active_block_ids:
             db.add(LotBlock(lot_id=n.lot_id, reason_code="RECALL", reason_text=recall.reason_text,
                             source_type="RECALL", source_id=recall.id, blocked_at=now, blocked_by=user_id))
     for h in res.shipments:

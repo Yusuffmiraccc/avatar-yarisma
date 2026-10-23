@@ -3,7 +3,7 @@ from pathlib import Path
 
 from sqlalchemy import CheckConstraint, ForeignKeyConstraint, UniqueConstraint
 
-import app.models  # noqa: F401
+import app.models
 from app.core.introspection import route_permissions
 from app.core.permissions import ROLE_PERMISSIONS
 from app.db.base import Base
@@ -13,8 +13,17 @@ DOCS = Path(__file__).resolve().parents[2] / "docs"
 
 
 def data_model() -> str:
-    out = ["# Veri Modeli", "", "Bu belge `backend/app/models` ORM metadata'sından üretilir (`python -m scripts.gen_docs`). "
-           "İş kuralları için `SOZLESME.md`.", "", f"Toplam tablo: **{len(Base.metadata.tables)}**", ""]
+    out = [
+        "# Veri Modeli",
+        "",
+        (
+            "Bu belge `backend/app/models` ORM metadata'sından üretilir (`python -m scripts.gen_docs`). "
+            "İş kuralları için `SOZLESME.md`."
+        ),
+        "",
+        f"Toplam tablo: **{len(Base.metadata.tables)}**",
+        "",
+    ]
     for t in sorted(Base.metadata.tables.values(), key=lambda x: x.name):
         out += [f"## `{t.name}`", "", "| Kolon | Tip | Null | Not |", "|---|---|---|---|"]
         fks = {c.parent.name: c.target_fullname for fk in t.constraints if isinstance(fk, ForeignKeyConstraint) for c in fk.elements}

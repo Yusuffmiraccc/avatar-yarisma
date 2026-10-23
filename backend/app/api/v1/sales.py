@@ -9,7 +9,8 @@ from app.core.errors import not_found, request_id_of
 from app.models import Sale, Shipment
 from app.schemas.common import Page, PageParams, paginate
 from app.schemas.sales import SaleIn, SaleOut, ShipmentIn, ShipmentOut
-from app.services import idempotency, sales as svc
+from app.services import idempotency
+from app.services import sales as svc
 
 router = APIRouter(tags=["sales"])
 PP = Annotated[PageParams, Depends()]
@@ -23,7 +24,7 @@ class VoidIn(BaseModel):
 @router.post("/sales", response_model=SaleOut, status_code=201)
 def create_sale(body: SaleIn, request: Request, db: DB, idempotency_key: IdemKey = None, user=require("sales:create")):
     def action():
-        sale = svc.create_sale(db, body, user.id, request_id_of(request))
+        sale = svc.create_sale(db, body, user, request_id_of(request))
         return 201, svc.sale_out(db, sale)
 
     return idempotency.run(db, scope=f"POST:/sales:{user.id}", key=idempotency_key, body=body, required=True,
@@ -38,7 +39,7 @@ def list_sales(db: DB, p: PP, status: str | None = None, customer_id: int | None
     if customer_id:
         stmt = stmt.where(Sale.customer_id == customer_id)
     res = paginate(db, stmt, p)
-    res["items"] = [svc.sale_out(db, s) for s in res["items"]]
+    res["items"] = svc.sale_out_many(db, res["items"])
     return res
 
 
@@ -68,7 +69,7 @@ def list_shipments(db: DB, p: PP, status: str | None = None, customer_id: int | 
     if customer_id:
         stmt = stmt.where(Shipment.customer_id == customer_id)
     res = paginate(db, stmt, p)
-    res["items"] = [svc.shipment_out(db, s) for s in res["items"]]
+    res["items"] = svc.shipment_out_many(db, res["items"])
     return res
 
 

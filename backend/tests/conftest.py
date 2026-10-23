@@ -7,19 +7,22 @@ ROOT_URL = os.environ.get("TEST_ROOT_URL", "mysql+pymysql://root:change-root-loc
 TEST_DB = "avatar_test"
 os.environ["DATABASE_URL"] = ROOT_URL.replace("/?", f"/{TEST_DB}?")
 os.environ["JWT_SECRET_KEY"] = "test-secret-key-0123456789abcdef0123456789"
+os.environ["REDIS_URL"] = os.environ.get("TEST_REDIS_URL", "redis://:avatar-test-only@localhost:16379/0")
 
-from fastapi.testclient import TestClient  # noqa: E402
+# Configure settings before importing modules that cache them.
+from functools import lru_cache
 
-import app.models  # noqa: E402,F401
-from app.db.base import Base  # noqa: E402
-from app.db.session import SessionLocal, engine  # noqa: E402
-from app.main import app  # noqa: E402
-from app.services import auth as auth_svc  # noqa: E402
-import app.services.bootstrap as _bootstrap  # noqa: E402
-from functools import lru_cache  # noqa: E402
+from fastapi.testclient import TestClient
+
+import app.models
+import app.services.bootstrap as _bootstrap
+from app.db.base import Base
+from app.db.session import SessionLocal, engine
+from app.main import app
+from app.services import auth as auth_svc
 
 _bootstrap.hash_password = lru_cache(_bootstrap.hash_password)  # testlerde argon2'yi tekrar hesaplama
-from app.services.bootstrap import create_user, seed_reference  # noqa: E402
+from app.services.bootstrap import create_user, seed_reference
 
 PASSWORD = "Test-Pass-123!"
 

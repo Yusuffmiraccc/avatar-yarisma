@@ -38,8 +38,8 @@ class InventoryBalance(Base):
         CheckConstraint("reserved_quantity >= 0", name="reserved_nonneg"),
     )
     lot_id: Mapped[int] = mapped_column(BigId, ForeignKey("lots.id"), primary_key=True)
-    on_hand_quantity: Mapped[Decimal] = mapped_column(Qty, default=Decimal("0"))
-    reserved_quantity: Mapped[Decimal] = mapped_column(Qty, default=Decimal("0"))
+    on_hand_quantity: Mapped[Decimal] = mapped_column(Qty, default=Decimal(0))
+    reserved_quantity: Mapped[Decimal] = mapped_column(Qty, default=Decimal(0))
     updated_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow, onupdate=utcnow)
 
 
@@ -123,7 +123,7 @@ class ReworkOrder(Base):
     output_lot_id: Mapped[int] = fk("lots.id")
     output_quantity: Mapped[Decimal] = mapped_column(Qty)
     unit_code: Mapped[str] = unit_fk()
-    extra_cost: Mapped[Decimal] = mapped_column(Money, default=Decimal("0"))
+    extra_cost: Mapped[Decimal] = mapped_column(Money, default=Decimal(0))
     reason: Mapped[str] = mapped_column(String(500))
     created_at: Mapped[datetime] = created_at()
     created_by: Mapped[int | None] = fk("users.id", nullable=True)

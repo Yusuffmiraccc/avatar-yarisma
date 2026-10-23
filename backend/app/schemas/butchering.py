@@ -136,11 +136,11 @@ class ButcheringOrderOut(ApiModel):
     started_at: datetime | None = None
     completed_at: datetime | None = None
     notes: str | None = None
-    inputs: list[BInputOut] = []
-    outputs: list[BOutputOut] = []
-    waste_records: list[WasteOut] = []
+    inputs: list[BInputOut] = Field(default_factory=list)
+    outputs: list[BOutputOut] = Field(default_factory=list)
+    waste_records: list[WasteOut] = Field(default_factory=list)
     variance: VarianceOut | None = None
-    findings: list[Finding] = []
+    findings: list[Finding] = Field(default_factory=list)
     sellable_cost_total: Dec | None = None
     waste_cost_total: Dec | None = None
     allocated_total: Dec | None = None

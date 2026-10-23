@@ -36,7 +36,7 @@ def run_reference_order(client, h):
 
 def test_in_progress_does_not_touch_stock(client, auth):
     h = auth("ADMIN")
-    oid, _, lots = run_reference_order(client, h)
+    _, _, lots = run_reference_order(client, h)
     assert client.get(f"/api/v1/lots/{lots['et']['id']}", headers=h).json()["on_hand_quantity"] == "100.000000"
 
 
@@ -76,9 +76,19 @@ def test_complete_rolls_back_everything_on_failure(client, auth):
     assert client.get(f"/api/v1/production-orders/{oid}", headers=h).json()["status"] == "IN_PROGRESS"
 
 
+def test_production_output_unit_must_match_product_base_unit(client, auth):
+    h = auth("ADMIN")
+    oid, sucuk, lots = run_reference_order(client, h)
+    result = client.post(f"/api/v1/production-orders/{oid}/complete", headers=h, json={"outputs": [
+        {"product_id": sucuk["id"], "lot_code": "BAD-UNIT", "quantity": "85", "unit_code": "KG"}]})
+    assert result.status_code == 400
+    assert client.get(f"/api/v1/lots/{lots['et']['id']}", headers=h).json()["on_hand_quantity"] == "100.000000"
+    assert client.get(f"/api/v1/production-orders/{oid}", headers=h).json()["status"] == "IN_PROGRESS"
+
+
 def test_insufficient_input_stock_blocks_completion(client, auth):
     h = auth("ADMIN")
-    sucuk, sup, lots = setup_sucuk(client, h)
+    sucuk, _, lots = setup_sucuk(client, h)
     oid = client.post("/api/v1/production-orders", headers=h, json={"order_code": "URT-1"}).json()["id"]
     client.post(f"/api/v1/production-orders/{oid}/inputs", headers=h,
                 json={"lot_id": lots["et"]["id"], "quantity": "150", "unit_code": "KG"})
@@ -89,6 +99,5 @@ def test_insufficient_input_stock_blocks_completion(client, auth):
 
 
 def test_operator_can_manage_viewer_cannot(client, auth):
-    h = auth("ADMIN")
     assert client.post("/api/v1/production-orders", headers=auth("VIEWER"), json={"order_code": "X"}).status_code == 403
     assert client.post("/api/v1/production-orders", headers=auth("OPERATOR"), json={"order_code": "X"}).status_code == 201

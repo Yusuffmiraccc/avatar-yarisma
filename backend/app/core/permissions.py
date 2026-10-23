@@ -2,12 +2,12 @@
 
 ALL_PERMISSIONS = frozenset(
     {
-        "catalog:read", "catalog:manage",
+        "catalog:read", "catalog:manage", "costs:read",
         "lots:read", "lots:receive", "lots:unblock",
         "inventory:read", "inventory:adjust",
         "production:read", "production:manage",
         "butchering:read", "butchering:manage", "butchering:approve_variance",
-        "sales:read", "sales:create", "sales:void",
+        "sales:read", "sales:create", "sales:void", "sales:override_price",
         "shipments:read", "shipments:manage",
         "traceability:read",
         "recalls:read", "recalls:manage", "recalls:resolve",

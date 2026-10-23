@@ -5,16 +5,26 @@ from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import or_, select, update
 
-from app.api.v1.catalog import lot_out
+from app.api.v1.catalog import lot_out_many
 from app.core.deps import DB, require
 from app.core.errors import bad_request, conflict, not_found, request_id_of
 from app.core.permissions import ROLE_PERMISSIONS
 from app.core.security import hash_password
-from app.models import (AuditEvent, Customer, InventoryBalance, Lot, LotBlock, Product, ProductPrice, RefreshSession,
-                        Role, User)
+from app.models import (
+    AuditEvent,
+    Customer,
+    InventoryBalance,
+    Lot,
+    LotBlock,
+    Product,
+    ProductPrice,
+    RefreshSession,
+    Role,
+    User,
+)
 from app.models.types import utcnow
 from app.schemas.catalog import CustomerOut, LotOut, ProductOut
-from app.schemas.common import ApiModel, Dec, Page, PageParams, paginate
+from app.schemas.common import ApiModel, Dec, Page, PageParams, normalize_utc, paginate
 from app.services import audit
 
 router = APIRouter(tags=["admin"])
@@ -152,16 +162,17 @@ class SellableLot(LotOut):
 
 
 @router.get("/sync/catalog")
-def sync_catalog(db: DB, updated_after: datetime | None = None, _=require("catalog:read")):
+def sync_catalog(db: DB, updated_after: datetime | None = None, user=require("catalog:read")):
     """Android SQLite önbelleği için tek çağrılık anlık görüntü. Sunucu doğruluk kaynağıdır; satış öncesi yine doğrulanır.
 
     products/customers: updated_after'tan sonra değişenler. sellable_lots: stokta olan ve bloke olmayan lotlar.
     blocked_lot_ids: önbellekten çıkarılması gereken bloke lotlar. Dönen server_time bir sonraki çağrıda kullanılır.
     """
     pstmt, cstmt = select(Product), select(Customer)
+    updated_after = normalize_utc(updated_after)
     if updated_after:
-        pstmt = pstmt.where(or_(Product.updated_at > updated_after, Product.created_at > updated_after))
-        cstmt = cstmt.where(or_(Customer.updated_at > updated_after, Customer.created_at > updated_after))
+        pstmt = pstmt.where(or_(Product.updated_at >= updated_after, Product.created_at >= updated_after))
+        cstmt = cstmt.where(or_(Customer.updated_at >= updated_after, Customer.created_at >= updated_after))
     price = {}
     for pr in db.scalars(select(ProductPrice).where(ProductPrice.price_type == "SALE", ProductPrice.valid_to.is_(None))):
         price[pr.product_id] = pr.amount
@@ -174,7 +185,8 @@ def sync_catalog(db: DB, updated_after: datetime | None = None, _=require("catal
         "server_time": utcnow().isoformat(timespec="microseconds") + "Z",
         "products": [ProductOut.model_validate(p).model_dump(mode="json") for p in db.scalars(pstmt.order_by(Product.id))],
         "customers": [CustomerOut.model_validate(c).model_dump(mode="json") for c in db.scalars(cstmt.order_by(Customer.id))],
-        "sellable_lots": [SellableLot(**lot_out(db, l).model_dump(), sale_price=price.get(l.product_id)).model_dump(mode="json")
-                          for l in lots],
+        "sellable_lots": [SellableLot(**row.model_dump(exclude_unset=True),
+                                        sale_price=price.get(lot_obj.product_id)).model_dump(mode="json", exclude_unset=True)
+                          for lot_obj, row in zip(lots, lot_out_many(db, lots, include_cost="costs:read" in user.permissions), strict=True)],
         "blocked_lot_ids": blocked,
     }

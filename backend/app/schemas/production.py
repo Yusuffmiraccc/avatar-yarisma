@@ -82,9 +82,9 @@ class ProductionOrderOut(ApiModel):
     started_at: datetime | None = None
     completed_at: datetime | None = None
     notes: str | None = None
-    inputs: list[InputOut] = []
-    service_costs: list[ServiceCostOut] = []
-    outputs: list[OutputOut] = []
+    inputs: list[InputOut] = Field(default_factory=list)
+    service_costs: list[ServiceCostOut] = Field(default_factory=list)
+    outputs: list[OutputOut] = Field(default_factory=list)
     total_input_cost: Dec | None = None
     total_service_cost: Dec | None = None
     total_cost: Dec | None = None

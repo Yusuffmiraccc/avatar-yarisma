@@ -9,9 +9,60 @@ from app.models.butchering import (
     WeightVarianceRecord,
 )
 from app.models.catalog import Customer, Product, ProductPrice, Supplier, Unit, UnitConversion
-from app.models.inventory import InventoryBalance, Lot, LotBlock, LotGenealogyEdge, ReworkOrder, StockMovement
-from app.models.production import ProductionInput, ProductionOrder, ProductionOutput, ProductionServiceCost
+from app.models.inventory import (
+    InventoryBalance,
+    Lot,
+    LotBlock,
+    LotGenealogyEdge,
+    ReworkOrder,
+    StockMovement,
+)
+from app.models.production import (
+    ProductionInput,
+    ProductionOrder,
+    ProductionOutput,
+    ProductionServiceCost,
+)
 from app.models.recall import Recall, RecallCustomerImpact, RecallLot
 from app.models.sales import IdempotencyRecord, Sale, SaleLine, Shipment, ShipmentLine
 
-__all__ = [n for n in dir() if n[0].isupper()]
+__all__ = [
+    "AnomalyAlert",
+    "AuditEvent",
+    "ButcheringInput",
+    "ButcheringOrder",
+    "ButcheringOutput",
+    "ButcheringRecipeLine",
+    "ButcheringWasteRecord",
+    "Customer",
+    "DocumentExtraction",
+    "IdempotencyRecord",
+    "InventoryBalance",
+    "Lot",
+    "LotBlock",
+    "LotGenealogyEdge",
+    "MlPrediction",
+    "Product",
+    "ProductPrice",
+    "ProductionInput",
+    "ProductionOrder",
+    "ProductionOutput",
+    "ProductionServiceCost",
+    "Recall",
+    "RecallCustomerImpact",
+    "RecallLot",
+    "RefreshSession",
+    "ReworkOrder",
+    "Role",
+    "Sale",
+    "SaleLine",
+    "Shipment",
+    "ShipmentLine",
+    "StockMovement",
+    "Supplier",
+    "Unit",
+    "UnitConversion",
+    "User",
+    "UserRole",
+    "WeightVarianceRecord",
+]

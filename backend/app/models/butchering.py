@@ -83,7 +83,7 @@ class ButcheringWasteRecord(Base):
     # TRIMMING_LOSS | BONE_WASTE | CONTAMINATION | SPOILAGE | PROCESS_LOSS | OTHER
     reason_code: Mapped[str] = mapped_column(String(40))
     notes: Mapped[str | None] = mapped_column(String(1000))
-    allocated_cost: Mapped[Decimal] = mapped_column(Money, default=Decimal("0"))
+    allocated_cost: Mapped[Decimal] = mapped_column(Money, default=Decimal(0))
     created_at: Mapped[datetime] = created_at()
 
 
@@ -109,6 +109,6 @@ class WeightVarianceRecord(Base):
     variance_weight: Mapped[Decimal] = mapped_column(Qty)
     tolerance_weight: Mapped[Decimal] = mapped_column(Qty)
     reason_text: Mapped[str] = mapped_column(String(500))
-    allocated_cost: Mapped[Decimal] = mapped_column(Money, default=Decimal("0"))  # açıklanan fark için maliyet payı
+    allocated_cost: Mapped[Decimal] = mapped_column(Money, default=Decimal(0))  # açıklanan fark için maliyet payı
     approved_by: Mapped[int] = fk("users.id")
     created_at: Mapped[datetime] = created_at()

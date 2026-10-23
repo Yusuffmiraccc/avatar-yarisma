@@ -5,7 +5,7 @@ doğrulama bayrakları üretilir. Görüntü OCR'ı sunucuda yoktur: istemci (ö
 """
 
 import re
-from datetime import date, datetime
+from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from difflib import SequenceMatcher
 
@@ -15,20 +15,23 @@ from sqlalchemy.orm import Session
 from app.core.errors import bad_request, invalid_state, not_found
 from app.models import DocumentExtraction, Lot, Product, Supplier
 from app.models.types import utcnow
-from app.services import audit, lots as lots_svc
+from app.services import audit
+from app.services import lots as lots_svc
 
 UNIT_MAP = {"kg": "KG", "kilo": "KG", "g": "G", "gr": "G", "adet": "PCS", "ad": "PCS", "pcs": "PCS", "paket": "PACK",
             "pk": "PACK", "pack": "PACK"}
 NUM = r"\d[\d.,]*"
 LINE_RE = re.compile(
     rf"^\s*(?P<name>[^\d\n][^\n]*?)\s+(?P<qty>{NUM})\s*(?P<unit>kg|kilo|gr|g|adet|ad|pcs|paket|pk|pack)\b"
-    rf"\s+(?P<price>{NUM})\s*(?:€|eur|tl|₺)?\s+(?P<total>{NUM})\s*(?:€|eur|tl|₺)?(?P<rest>.*)$", re.I)
-LOT_RE = re.compile(r"(?:lot|parti)\s*(?:no)?\s*[:#]?\s*([A-Z0-9][A-Z0-9\-/_.]+)", re.I)
-EXP_RE = re.compile(r"(?:skt|son\s*t[uü]ketim)\s*[:#]?\s*(\d{4}-\d{2}-\d{2}|\d{2}[./]\d{2}[./]\d{4})", re.I)
-DOCNO_RE = re.compile(r"(?:fatura|irsaliye)\s*(?:no|numaras[ıi])?\s*[:#]?\s*([A-Z0-9][A-Z0-9\-/_.]+)", re.I)
-DATE_RE = re.compile(r"(?:tarih)\s*[:#]?\s*(\d{4}-\d{2}-\d{2}|\d{2}[./]\d{2}[./]\d{4})", re.I)
-SUPPLIER_RE = re.compile(r"(?:sat[ıi]c[ıi]|tedarik[çc]i|firma|g[öo]nderen)\s*[:#]?\s*(.+)", re.I)
-GRAND_RE = re.compile(rf"(?:genel\s*toplam|toplam\s*tutar|toplam)\s*[:#]?\s*({NUM})", re.I)
+    rf"\s+(?P<price>{NUM})\s*(?:€|eur|tl|₺)?\s+(?P<total>{NUM})\s*(?:€|eur|tl|₺)?(?P<rest>.*)$",
+    re.IGNORECASE,
+)
+LOT_RE = re.compile(r"(?:lot|parti)\s*(?:no)?\s*[:#]?\s*([A-Z0-9][A-Z0-9\-/_.]+)", re.IGNORECASE)
+EXP_RE = re.compile(r"(?:skt|son\s*t[uü]ketim)\s*[:#]?\s*(\d{4}-\d{2}-\d{2}|\d{2}[./]\d{2}[./]\d{4})", re.IGNORECASE)
+DOCNO_RE = re.compile(r"(?:fatura|irsaliye)\s*(?:no|numaras[ıi])?\s*[:#]?\s*([A-Z0-9][A-Z0-9\-/_.]+)", re.IGNORECASE)
+DATE_RE = re.compile(r"(?:tarih)\s*[:#]?\s*(\d{4}-\d{2}-\d{2}|\d{2}[./]\d{2}[./]\d{4})", re.IGNORECASE)
+SUPPLIER_RE = re.compile(r"(?:sat[ıi]c[ıi]|tedarik[çc]i|firma|g[öo]nderen)\s*[:#]?\s*(.+)", re.IGNORECASE)
+GRAND_RE = re.compile(rf"(?:genel\s*toplam|toplam\s*tutar|toplam)\s*[:#]?\s*({NUM})", re.IGNORECASE)
 
 
 def parse_number(s: str) -> Decimal | None:
@@ -110,7 +113,7 @@ def extract(db: Session, doc_type: str, text: str) -> dict:
             flags.append("LOT_ALREADY_EXISTS")
         if prod is not None and prod.requires_expiry_date and not exp:
             flags.append("EXPIRY_REQUIRED_MISSING")
-        conf = round(max(0.0, min(1.0, score)) * (0.5 if flags else 1.0) + (0.0 if flags else 0.0), 2)
+        conf = round(max(0.0, min(1.0, score)) * (0.5 if flags else 1.0), 2)
         lines.append({"line_index": len(lines), "text": raw.strip(), "name_on_document": lm["name"].strip(),
                       "quantity": str(qty) if qty is not None else None, "unit_code": unit,
                       "unit_cost": str(price) if price is not None else None,
@@ -122,7 +125,7 @@ def extract(db: Session, doc_type: str, text: str) -> dict:
                       "flags": flags, "confidence": conf})
     if not lines:
         warnings.append("NO_LINES_FOUND")
-    sums = sum((Decimal(l["line_total"]) for l in lines if l["line_total"]), Decimal("0"))
+    sums = sum((Decimal(l["line_total"]) for l in lines if l["line_total"]), Decimal(0))
     gm = GRAND_RE.findall(text)
     grand = parse_number(gm[-1]) if gm else None
     if grand is not None and lines and abs(grand - sums) > Decimal("0.01"):

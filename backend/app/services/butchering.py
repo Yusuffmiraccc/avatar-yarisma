@@ -6,15 +6,36 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.core.deps import CurrentUser
 from app.core.errors import AppError, bad_request, conflict, invalid_state, not_found
-from app.models import (ButcheringInput, ButcheringOrder, ButcheringOutput, ButcheringRecipeLine,
-                        ButcheringWasteRecord, Lot, LotGenealogyEdge, Product, WeightVarianceRecord)
+from app.models import (
+    ButcheringInput,
+    ButcheringOrder,
+    ButcheringOutput,
+    ButcheringRecipeLine,
+    ButcheringWasteRecord,
+    Lot,
+    LotGenealogyEdge,
+    Product,
+    WeightVarianceRecord,
+)
 from app.models.types import utcnow
-from app.schemas.butchering import (BInputOut, BOutputOut, ButcheringCompleteIn, ButcheringInputIn, ButcheringOrderOut,
-                                    Finding, RecipeIn, RecipeLineOut, RecipeOut, VarianceOut, WasteIn, WasteOut)
+from app.schemas.butchering import (
+    BInputOut,
+    BOutputOut,
+    ButcheringCompleteIn,
+    ButcheringInputIn,
+    ButcheringOrderOut,
+    Finding,
+    RecipeIn,
+    RecipeLineOut,
+    RecipeOut,
+    VarianceOut,
+    WasteIn,
+    WasteOut,
+)
 from app.services import alerts, audit, costing, stock
 from app.services.production import sale_price
 
-ZERO = Decimal("0")
+ZERO = Decimal(0)
 
 
 def get_order(db: Session, order_id: int, *, lock: bool = False) -> ButcheringOrder:
@@ -185,7 +206,7 @@ def complete(db: Session, order_id: int, body: ButcheringCompleteIn, user: Curre
             raise conflict("BY_VALUE_WASTE_VALUATION_REQUIRED",
                            "BY_VALUE için onaylı fire birim değeri (waste_unit_value) olmadan tamamlanamaz.")
         wv = body.waste_unit_value or ZERO
-        values = [costing.q4(o.actual_weight * p) for o, p in zip(body.outputs, prices)] \
+        values = [costing.q4(o.actual_weight * p) for o, p in zip(body.outputs, prices, strict=True)] \
             + [costing.q4(w.actual_weight * wv) for w in wastes] + ([costing.q4(loss * wv)] if loss > 0 else [])
         weights = values
         if sum(weights, ZERO) <= 0:
@@ -257,16 +278,34 @@ def complete(db: Session, order_id: int, body: ButcheringCompleteIn, user: Curre
     return order
 
 
-def to_out(db: Session, order: ButcheringOrder) -> ButcheringOrderOut:
-    inputs = db.scalars(select(ButcheringInput).where(ButcheringInput.butchering_order_id == order.id)
-                        .order_by(ButcheringInput.id)).all()
-    outputs = db.scalars(select(ButcheringOutput).where(ButcheringOutput.butchering_order_id == order.id)
-                         .order_by(ButcheringOutput.id)).all()
-    wastes = db.scalars(select(ButcheringWasteRecord).where(ButcheringWasteRecord.butchering_order_id == order.id)
-                        .order_by(ButcheringWasteRecord.id)).all()
-    var = db.scalar(select(WeightVarianceRecord).where(WeightVarianceRecord.butchering_order_id == order.id))
-    lot_ids = [i.lot_id for i in inputs] + [o.lot_id for o in outputs]
+def to_out_many(db: Session, orders: list[ButcheringOrder]) -> list[ButcheringOrderOut]:
+    if not orders:
+        return []
+    ids = [o.id for o in orders]
+    inputs = db.scalars(select(ButcheringInput).where(ButcheringInput.butchering_order_id.in_(ids)).order_by(ButcheringInput.id)).all()
+    outputs = db.scalars(select(ButcheringOutput).where(ButcheringOutput.butchering_order_id.in_(ids)).order_by(ButcheringOutput.id)).all()
+    wastes = db.scalars(select(ButcheringWasteRecord).where(ButcheringWasteRecord.butchering_order_id.in_(ids)).order_by(ButcheringWasteRecord.id)).all()
+    variances = db.scalars(select(WeightVarianceRecord).where(WeightVarianceRecord.butchering_order_id.in_(ids))).all()
+    lot_ids = {i.lot_id for i in inputs} | {o.lot_id for o in outputs}
     codes = {l.id: l.lot_code for l in db.scalars(select(Lot).where(Lot.id.in_(lot_ids)))} if lot_ids else {}
+    def group(rows, field):
+        out = {}
+        for row in rows:
+            out.setdefault(getattr(row, field), []).append(row)
+        return out
+    input_map = group(inputs, "butchering_order_id")
+    output_map = group(outputs, "butchering_order_id")
+    waste_map = group(wastes, "butchering_order_id")
+    variance_map = {v.butchering_order_id: v for v in variances}
+    return [_to_out(order, input_map.get(order.id, []), output_map.get(order.id, []),
+                    waste_map.get(order.id, []), variance_map.get(order.id), codes) for order in orders]
+
+
+def to_out(db: Session, order: ButcheringOrder) -> ButcheringOrderOut:
+    return to_out_many(db, [order])[0]
+
+
+def _to_out(order: ButcheringOrder, inputs, outputs, wastes, var, codes) -> ButcheringOrderOut:
     res = ButcheringOrderOut.model_validate(order)
     res.inputs = [BInputOut.model_validate(i).model_copy(update={"lot_code": codes.get(i.lot_id)}) for i in inputs]
     res.outputs = [BOutputOut.model_validate(o).model_copy(update={

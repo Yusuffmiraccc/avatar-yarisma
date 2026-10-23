@@ -1,6 +1,7 @@
 import hashlib
 import json
 from collections.abc import Callable
+from datetime import timedelta
 
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -10,6 +11,14 @@ from sqlalchemy.orm import Session
 
 from app.core.errors import AppError, bad_request
 from app.models import IdempotencyRecord
+from app.models.types import utcnow
+
+IDEMPOTENCY_RETENTION = timedelta(hours=24)
+
+
+def _expired(record: IdempotencyRecord, now) -> bool:
+    cutoff = now - IDEMPOTENCY_RETENTION
+    return record.expires_at <= now if record.expires_at is not None else record.created_at <= cutoff
 
 
 def request_hash(body: BaseModel | dict) -> str:
@@ -30,8 +39,13 @@ def run(db: Session, *, scope: str, key: str | None, body: BaseModel | dict, req
     h = request_hash(body)
 
     def existing() -> IdempotencyRecord | None:
-        return db.scalar(select(IdempotencyRecord).where(IdempotencyRecord.scope_key == scope,
-                                                         IdempotencyRecord.idempotency_key == key))
+        record = db.scalar(select(IdempotencyRecord).where(IdempotencyRecord.scope_key == scope,
+                                                            IdempotencyRecord.idempotency_key == key))
+        if record is not None and _expired(record, utcnow()):
+            db.delete(record)
+            db.flush()
+            return None
+        return record
 
     def replay(rec: IdempotencyRecord) -> JSONResponse:
         if rec.request_hash != h:
@@ -45,7 +59,7 @@ def run(db: Session, *, scope: str, key: str | None, body: BaseModel | dict, req
     # Yer tutucu satır: eşzamanlı aynı anahtar, bu transaction bitene kadar unique indekste bekler;
     # commit olursa IntegrityError → kayıtlı yanıt tekrar verilir, rollback olursa ikinci istek çalışır.
     placeholder = IdempotencyRecord(scope_key=scope, idempotency_key=key, request_hash=h, response_status=0,
-                                    response_body={})
+                                    response_body={}, expires_at=utcnow() + IDEMPOTENCY_RETENTION)
     try:
         with db.begin_nested():
             db.add(placeholder)

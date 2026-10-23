@@ -1,6 +1,6 @@
 from decimal import Decimal as D
 
-from tests.helpers import mk_party, mk_product, receive
+from tests.helpers import mk_product, receive
 from tests.test_butchering import outs, setup_lamb
 from tests.test_production import run_reference_order
 from tests.test_traceability_recall import build_demo
@@ -12,7 +12,7 @@ def _lot(client, h, code):
 
 def test_reverse_production_restores_stock_and_keeps_history(client, auth):
     h = auth("ADMIN")
-    oid, sucuk, lots = run_reference_order(client, h)
+    oid, sucuk, _ = run_reference_order(client, h)
     client.post(f"/api/v1/production-orders/{oid}/complete", headers=h, json={"outputs": [
         {"product_id": sucuk["id"], "lot_code": "SUC-2026-045", "quantity": "85", "unit_code": "PACK"}]})
     assert client.post(f"/api/v1/production-orders/{oid}/reverse", headers=auth("OPERATOR"),
@@ -41,7 +41,7 @@ def test_reverse_refused_when_output_already_shipped(client, auth):
 
 def test_reverse_butchering(client, auth):
     h = auth("ADMIN")
-    oid, lot, p = setup_lamb(client, h, total="287.50")
+    oid, _, p = setup_lamb(client, h, total="287.50")
     client.post(f"/api/v1/butchering-orders/{oid}/waste-records", headers=h, json={"actual_weight": "3", "reason_code": "BONE_WASTE"})
     assert client.post(f"/api/v1/butchering-orders/{oid}/complete", headers=h, json={"outputs": outs(p)}).status_code == 200
     r = client.post(f"/api/v1/butchering-orders/{oid}/reverse", headers=h, json={"reason": "Tartı hatası düzeltmesi"})
@@ -97,7 +97,7 @@ def test_quantity_difference_planned_vs_actual(client, auth):
     from app.models import ProductionOrder
     with SessionLocal() as db:
         o = db.get(ProductionOrder, oid)
-        o.planned_quantity, o.planned_unit_code = D("90"), "PACK"
+        o.planned_quantity, o.planned_unit_code = D(90), "PACK"
         db.commit()
     r = client.post(f"/api/v1/production-orders/{oid}/complete", headers=h, json={"outputs": [
         {"product_id": sucuk["id"], "lot_code": "S1", "quantity": "85", "unit_code": "PACK"}]})

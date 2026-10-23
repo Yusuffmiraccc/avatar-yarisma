@@ -13,7 +13,7 @@ UNITS = [
     ("KG", "Kilogram", "MASS"), ("G", "Gram", "MASS"),
     ("PACK", "Paket", "COUNT"), ("PCS", "Adet", "COUNT"),
 ]
-CONVERSIONS = [("KG", "G", Decimal("1000")), ("G", "KG", Decimal("0.001"))]
+CONVERSIONS = [("KG", "G", Decimal(1000)), ("G", "KG", Decimal("0.001"))]
 
 
 def seed_reference(db: Session) -> None:

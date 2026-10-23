@@ -11,8 +11,19 @@ from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import (ButcheringInput, ButcheringOrder, ButcheringOutput, ButcheringWasteRecord, Product,
-                        ProductionInput, ProductionOrder, ProductionOutput, ProductionServiceCost, Supplier, Lot)
+from app.models import (
+    ButcheringInput,
+    ButcheringOrder,
+    ButcheringOutput,
+    ButcheringWasteRecord,
+    Lot,
+    Product,
+    ProductionInput,
+    ProductionOrder,
+    ProductionOutput,
+    ProductionServiceCost,
+    Supplier,
+)
 from app.models.types import utcnow
 from app.services import costing, stock
 
@@ -144,7 +155,7 @@ def generate_butchering(db: Session, n: int = 150, seed: int = 7) -> int:
             out_total = sum(weights.values(), D("0"))
             waste_w = o.input_weight - out_total
         parts = costing.allocate(cost, [*weights.values(), waste_w])
-        for (cut, wt), alloc in zip(weights.items(), parts):
+        for (cut, wt), alloc in zip(weights.items(), parts[:-1], strict=True):
             db.add(ButcheringOutput(butchering_order_id=o.id, product_id=prods[(animal, cut)].id,
                                     lot_id=lots[(animal, cut)].id, output_type="BYPRODUCT" if cut == "YANURUN" else "CUT",
                                     actual_weight=wt, unit_code="KG", allocation_weight=wt, allocated_cost=alloc))

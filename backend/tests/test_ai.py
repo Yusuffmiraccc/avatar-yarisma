@@ -1,7 +1,6 @@
 import pytest
 
 from app.core.config import get_settings
-from tests.helpers import mk_product, receive
 from tests.test_production import run_reference_order
 
 
@@ -28,6 +27,37 @@ def test_prediction_without_model_fails_softly_and_ops_continue(client, auth):
     done = client.post(f"/api/v1/production-orders/{oid}/complete", headers=h, json={"outputs": [
         {"product_id": sucuk["id"], "lot_code": "SUC-1", "quantity": "85", "unit_code": "PACK"}]})
     assert done.status_code == 200
+
+
+def test_prediction_exception_details_are_not_disclosed_or_persisted(client, auth, monkeypatch, caplog):
+    import logging
+
+    from app.ml import service as ml_service
+    from tests.test_production import run_reference_order
+
+    admin = auth("ADMIN")
+    order_id, _, _ = run_reference_order(client, admin)
+    secret_detail = "C:\\private\\models\\artifact.joblib INTERNAL_PICKLE_SENTINEL"
+    monkeypatch.setattr(ml_service, "artifact", lambda _kind: {"version": "test-model"})
+
+    def fail_prediction(*_args, **_kwargs):
+        raise RuntimeError(secret_detail)
+
+    monkeypatch.setattr(ml_service.modeling, "predict_production", fail_prediction)
+    caplog.set_level(logging.ERROR, logger="app.ml.service")
+    response = client.post("/api/v1/ai/production-yield/predict", headers=admin,
+                           json={"production_order_id": order_id})
+    assert response.status_code == 503
+    assert "Tahmin üretilemedi." in response.text
+    assert secret_detail not in response.text and "INTERNAL_PICKLE_SENTINEL" not in response.text
+    prediction_id = response.json()["prediction"]["id"]
+    assert secret_detail not in caplog.text and "INTERNAL_PICKLE_SENTINEL" not in caplog.text
+
+    viewer = auth("VIEWER")
+    history = client.get("/api/v1/ai/predictions", headers=viewer).json()
+    detail = client.get(f"/api/v1/ai/predictions/{prediction_id}", headers=viewer).json()
+    assert secret_detail not in str(history) and secret_detail not in str(detail)
+    assert detail["detail"] == {"message": "Tahmin üretilemedi."}
 
 
 def test_training_reports_baseline_comparison_and_beats_baseline(client, auth):

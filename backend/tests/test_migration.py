@@ -18,8 +18,8 @@ def _alembic(url: str, *args: str):
 
 
 def test_migration_matches_orm_metadata_and_roundtrips():
-    from app.db.base import Base
     import app.models  # noqa: F401
+    from app.db.base import Base
 
     root = sa.create_engine(ROOT_URL, isolation_level="AUTOCOMMIT")
     with root.connect() as c:
