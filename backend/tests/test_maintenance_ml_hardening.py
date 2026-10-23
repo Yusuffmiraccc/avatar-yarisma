@@ -157,3 +157,19 @@ def test_model_artifact_signature_is_verified_on_load(tmp_path):
     path.with_name("m.joblib.sig").unlink()
     with pytest.raises(ValueError):
         modeling.load(str(path))
+
+
+def test_worse_candidate_does_not_replace_active_model(tmp_path, monkeypatch):
+    from app.ml import modeling, service
+
+    monkeypatch.setattr(service, "_dir", lambda: tmp_path)
+
+    def art(pct):
+        return {"kind": "k", "version": str(pct), "trained_at": "t", "n_samples": 1, "model_name": "m",
+                "limitations": [], "metrics": {"cross_validation": {"improvement_over_baseline_percent": {"mae": pct}}}}
+
+    assert service._promote("production_yield", art(30))["version"] == "30"
+    kept = service._promote("production_yield", art(10))
+    assert kept["version"] == "30" and "candidate_rejected" in kept
+    assert service._promote("production_yield", art(40))["version"] == "40"
+    assert modeling.load(str(tmp_path / service.KIND_FILE["production_yield"]))["version"] == "40"

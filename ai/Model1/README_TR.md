@@ -1,3 +1,5 @@
+> **Durum: deneysel.** Teslim edilen yapay zeka çalışması (A: üretim verimi/EKP, B: parçalama) `backend/app/ml` içindedir ve backend ile entegredir. Bu klasör ayrı bir ön çalışmadır; backend tarafından çağrılmaz, `ai_*` tabloları Alembic migration'ının dışındadır. "Aday model yalnızca aktif modelden iyiyse devreye girer" kuralı `app/ml/service.py` içine taşındı.
+
 # AVATAR Model 1 — Üretim Tahmini, EKP ve Eşik Tabanlı Yeniden Eğitim
 
 Bu proje AVATAR değerlendirme projesindeki **Model 1** için bağımsız Python ML servisi başlangıcıdır. İki veri akışı birbirinden ayrılmıştır:
