@@ -47,7 +47,7 @@ def test_forward_backward_and_recall_end_to_end(client, auth):
     cust = {c["customer_name"]: D(c["total_quantity"]) for c in fwd["customers"]}
     assert cust == {"Market A": D(30), "Market B": D(25), "Market C": D(30)}
     assert fwd["second_tier"] == []
-    suc_node = [n for n in fwd["lots"] if n["lot_code"] == "SUC-2026-045"][0]
+    suc_node = next(n for n in fwd["lots"] if n["lot_code"] == "SUC-2026-045")
     assert D(suc_node["origin_share"]) > D("0.9")
 
     rc = client.post("/api/v1/recalls", headers=h, json={"recall_code": "RCL-2026-001", "reason_code": "QUALITY",

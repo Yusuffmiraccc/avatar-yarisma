@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, CheckConstraint, Index, Numeric, String, UniqueConstraint
+from sqlalchemy import Boolean, CheckConstraint, Index, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -16,19 +16,6 @@ class Unit(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
-class UnitConversion(Base):
-    __tablename__ = "unit_conversions"
-    __table_args__ = (
-        UniqueConstraint("from_unit_code", "to_unit_code"),
-        CheckConstraint("factor > 0", name="factor_positive"),
-    )
-    id: Mapped[int] = pk()
-    from_unit_code: Mapped[str] = unit_fk()
-    to_unit_code: Mapped[str] = unit_fk()
-    factor: Mapped[Decimal] = mapped_column(Numeric(19, 9))
-    created_at: Mapped[datetime] = created_at()
-
-
 class Product(Base):
     __tablename__ = "products"
     id: Mapped[int] = pk()
@@ -37,7 +24,6 @@ class Product(Base):
     # RAW_MATERIAL | INTERMEDIATE | FINISHED_GOOD | BYPRODUCT
     product_type: Mapped[str] = mapped_column(String(32))
     base_unit_code: Mapped[str] = unit_fk()
-    is_lot_tracked: Mapped[bool] = mapped_column(Boolean, default=True)
     requires_expiry_date: Mapped[bool] = mapped_column(Boolean, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = created_at()

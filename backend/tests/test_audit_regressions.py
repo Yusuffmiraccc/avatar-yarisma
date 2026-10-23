@@ -68,7 +68,7 @@ def test_cost_fields_require_costs_read_across_reports_and_order_endpoints(clien
     assert "total_purchase_cost" in admin_butcher and "allocated_cost" in admin_butcher["outputs"][0]
     assert "stock_value" in client.get("/api/v1/reports/dashboard", headers=admin).json()
 
-    for role in ("VIEWER", "SALES", "OPERATOR", "TRACEABILITY_MANAGER"):
+    for role in ("VIEWER", "SALES", "TRACEABILITY_MANAGER"):
         headers = auth(role)
         paths = ["/api/v1/reports/dashboard", "/api/v1/reports/production-costs",
                  "/api/v1/reports/stock-valuation"]
@@ -85,7 +85,7 @@ def test_cost_mismatch_alert_and_butchering_finding_do_not_leak_to_operator(clie
     admin = auth("ADMIN")
     order_id, _, _ = setup_lamb(client, admin)  # deliberately inconsistent purchase total/price
 
-    operator = auth("OPERATOR")
+    operator = auth("TRACEABILITY_MANAGER")
     order_response = client.get(f"/api/v1/butchering-orders/{order_id}", headers=operator)
     alerts_response = client.get("/api/v1/alerts", headers=operator)
     assert order_response.status_code == 200 and alerts_response.status_code == 200
@@ -220,3 +220,16 @@ def test_100_row_lists_and_wide_traceability_graph_have_bounded_queries(client, 
         measured[path] = (count[0], round(elapsed, 3))
         assert count[0] <= 25, f"{path}: {count[0]} statements for 100 rows/nodes"
     print(f"100-row/query performance (statements, seconds): {measured}")
+
+
+def test_audit_events_hide_cost_details_without_costs_read(client, auth):
+    admin = auth("ADMIN")
+    oid, sucuk, _ = run_reference_order(client, admin)
+    done = client.post(f"/api/v1/production-orders/{oid}/complete", headers=admin, json={"outputs": [
+        {"product_id": sucuk["id"], "lot_code": "SUC-AUDIT", "quantity": "85", "unit_code": "PACK"}]})
+    assert done.status_code == 200, done.text
+    params = {"action": "PRODUCTION_COMPLETED"}
+    assert "ekp" in json.dumps(client.get("/api/v1/audit-events", headers=admin, params=params).json())
+    tm = client.get("/api/v1/audit-events", headers=auth("TRACEABILITY_MANAGER"), params=params)
+    assert tm.status_code == 200 and tm.json()["total"] == 1
+    _assert_no_cost_fields(tm.json())

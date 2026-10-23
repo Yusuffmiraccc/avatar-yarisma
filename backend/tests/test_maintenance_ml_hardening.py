@@ -141,3 +141,19 @@ def test_traceability_forward_query_count_is_batched_for_large_fanout(db, auth, 
     assert len(small_result.lots) == 3
     assert small_query_count == 9
     assert len(statements) == small_query_count
+
+
+def test_model_artifact_signature_is_verified_on_load(tmp_path):
+    import pytest
+
+    from app.ml import modeling
+
+    path = tmp_path / "m.joblib"
+    modeling.save({"a": 1}, str(path))
+    assert modeling.load(str(path)) == {"a": 1}
+    path.write_bytes(path.read_bytes() + b"x")
+    with pytest.raises(ValueError):
+        modeling.load(str(path))
+    path.with_name("m.joblib.sig").unlink()
+    with pytest.raises(ValueError):
+        modeling.load(str(path))

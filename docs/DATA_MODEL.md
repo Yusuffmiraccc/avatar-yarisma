@@ -2,7 +2,7 @@
 
 Bu belge `backend/app/models` ORM metadata'sından üretilir (`python -m scripts.gen_docs`). İş kuralları için `SOZLESME.md`.
 
-Toplam tablo: **38**
+Toplam tablo: **37**
 
 ## `anomaly_alerts`
 
@@ -46,7 +46,7 @@ Kısıtlar/indeksler: `INDEX ix_audit_events_entity_type (entity_type)`
 | `cost_snapshot` | NUMERIC(19, 4) | hayır |  |
 | `created_at` | DATETIME | hayır |  |
 
-Kısıtlar/indeksler: `CHECK quantity > 0`; `INDEX ix_butchering_inputs_butchering_order_id (butchering_order_id)`; `INDEX ix_butchering_inputs_lot_id (lot_id)`
+Kısıtlar/indeksler: `CHECK quantity > 0`; `INDEX ix_butchering_inputs_lot_id (lot_id)`; `INDEX ix_butchering_inputs_butchering_order_id (butchering_order_id)`
 
 ## `butchering_orders`
 
@@ -73,7 +73,7 @@ Kısıtlar/indeksler: `CHECK quantity > 0`; `INDEX ix_butchering_inputs_butcheri
 | `created_at` | DATETIME | hayır |  |
 | `created_by` | BIGINT | evet | FK → users.id |
 
-Kısıtlar/indeksler: `CHECK total_purchase_cost >= 0`; `CHECK input_weight > 0`
+Kısıtlar/indeksler: `CHECK input_weight > 0`; `CHECK total_purchase_cost >= 0`
 
 ## `butchering_outputs`
 
@@ -121,7 +121,7 @@ Kısıtlar/indeksler: `CHECK expected_ratio >= 0 AND expected_ratio <= 1`; `INDE
 | `allocated_cost` | NUMERIC(19, 4) | hayır |  |
 | `created_at` | DATETIME | hayır |  |
 
-Kısıtlar/indeksler: `CHECK allocated_cost >= 0`; `CHECK actual_weight >= 0`; `INDEX ix_butchering_waste_records_butchering_order_id (butchering_order_id)`
+Kısıtlar/indeksler: `CHECK actual_weight >= 0`; `CHECK allocated_cost >= 0`; `INDEX ix_butchering_waste_records_butchering_order_id (butchering_order_id)`
 
 ## `customers`
 
@@ -178,7 +178,7 @@ Kısıtlar/indeksler: `UNIQUE (scope_key, idempotency_key)`
 | `reserved_quantity` | NUMERIC(19, 6) | hayır |  |
 | `updated_at` | DATETIME | hayır |  |
 
-Kısıtlar/indeksler: `CHECK on_hand_quantity >= 0`; `CHECK reserved_quantity >= 0`
+Kısıtlar/indeksler: `CHECK reserved_quantity >= 0`; `CHECK on_hand_quantity >= 0`
 
 ## `lot_blocks`
 
@@ -214,7 +214,7 @@ Kısıtlar/indeksler: `INDEX ix_lot_blocks_active (lot_id, unblocked_at)`
 | `target_unit_code` | VARCHAR(16) | hayır | FK → units.code |
 | `created_at` | DATETIME | hayır |  |
 
-Kısıtlar/indeksler: `UNIQUE (source_lot_id, target_lot_id, process_type, process_id)`; `CHECK source_quantity >= 0 AND target_quantity >= 0`; `CHECK source_lot_id <> target_lot_id`; `INDEX ix_lot_genealogy_edges_target_lot_id (target_lot_id)`; `INDEX ix_genealogy_process (process_type, process_id)`; `INDEX ix_lot_genealogy_edges_source_lot_id (source_lot_id)`
+Kısıtlar/indeksler: `UNIQUE (source_lot_id, target_lot_id, process_type, process_id)`; `CHECK source_lot_id <> target_lot_id`; `CHECK source_quantity >= 0 AND target_quantity >= 0`; `INDEX ix_genealogy_process (process_type, process_id)`; `INDEX ix_lot_genealogy_edges_target_lot_id (target_lot_id)`; `INDEX ix_lot_genealogy_edges_source_lot_id (source_lot_id)`
 
 ## `lots`
 
@@ -335,7 +335,7 @@ Kısıtlar/indeksler: `CHECK unit_cost >= 0 AND total_cost >= 0`; `CHECK quantit
 | `unit_cost` | NUMERIC(19, 4) | evet |  |
 | `created_at` | DATETIME | hayır |  |
 
-Kısıtlar/indeksler: `CHECK quantity > 0`; `INDEX ix_production_outputs_production_order_id (production_order_id)`; `INDEX ix_production_outputs_lot_id (lot_id)`
+Kısıtlar/indeksler: `CHECK quantity > 0`; `INDEX ix_production_outputs_lot_id (lot_id)`; `INDEX ix_production_outputs_production_order_id (production_order_id)`
 
 ## `production_service_costs`
 
@@ -363,7 +363,6 @@ Kısıtlar/indeksler: `CHECK amount >= 0`; `INDEX ix_production_service_costs_pr
 | `name` | VARCHAR(160) | hayır |  |
 | `product_type` | VARCHAR(32) | hayır |  |
 | `base_unit_code` | VARCHAR(16) | hayır | FK → units.code |
-| `is_lot_tracked` | BOOLEAN | hayır |  |
 | `requires_expiry_date` | BOOLEAN | hayır |  |
 | `is_active` | BOOLEAN | hayır |  |
 | `created_at` | DATETIME | hayır |  |
@@ -474,7 +473,7 @@ Kısıtlar/indeksler: `CHECK input_quantity > 0 AND output_quantity > 0`
 | `currency_code` | VARCHAR(3) | hayır |  |
 | `created_at` | DATETIME | hayır |  |
 
-Kısıtlar/indeksler: `UNIQUE (sale_id, line_number)`; `CHECK quantity > 0`; `CHECK unit_price >= 0 AND line_total >= 0`; `INDEX ix_sale_lines_lot_id (lot_id)`
+Kısıtlar/indeksler: `UNIQUE (sale_id, line_number)`; `CHECK unit_price >= 0 AND line_total >= 0`; `CHECK quantity > 0`; `INDEX ix_sale_lines_lot_id (lot_id)`
 
 ## `sales`
 
@@ -546,7 +545,7 @@ Kısıtlar/indeksler: `UNIQUE (shipment_id, line_number)`; `CHECK quantity > 0`;
 | `created_at` | DATETIME | hayır |  |
 | `created_by` | BIGINT | evet | FK → users.id |
 
-Kısıtlar/indeksler: `CHECK direction IN ('IN','OUT')`; `CHECK quantity > 0`; `INDEX ix_stock_movements_lot_time (lot_id, occurred_at)`; `INDEX ix_stock_movements_product_time (product_id, occurred_at)`; `INDEX ix_stock_movements_idem (idempotency_key)`; `INDEX ix_stock_movements_source (source_type, source_id)`
+Kısıtlar/indeksler: `CHECK quantity > 0`; `CHECK direction IN ('IN','OUT')`; `INDEX ix_stock_movements_product_time (product_id, occurred_at)`; `INDEX ix_stock_movements_idem (idempotency_key)`; `INDEX ix_stock_movements_source (source_type, source_id)`; `INDEX ix_stock_movements_lot_time (lot_id, occurred_at)`
 
 ## `suppliers`
 
@@ -561,18 +560,6 @@ Kısıtlar/indeksler: `CHECK direction IN ('IN','OUT')`; `CHECK quantity > 0`; `
 | `is_active` | BOOLEAN | hayır |  |
 | `created_at` | DATETIME | hayır |  |
 | `updated_at` | DATETIME | evet |  |
-
-## `unit_conversions`
-
-| Kolon | Tip | Null | Not |
-|---|---|---|---|
-| `id` | BIGINT | hayır | PK |
-| `from_unit_code` | VARCHAR(16) | hayır | FK → units.code |
-| `to_unit_code` | VARCHAR(16) | hayır | FK → units.code |
-| `factor` | NUMERIC(19, 9) | hayır |  |
-| `created_at` | DATETIME | hayır |  |
-
-Kısıtlar/indeksler: `UNIQUE (from_unit_code, to_unit_code)`; `CHECK factor > 0`
 
 ## `units`
 

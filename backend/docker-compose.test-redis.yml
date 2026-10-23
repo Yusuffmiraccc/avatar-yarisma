@@ -1,3 +1,5 @@
+name: avatar-test
+
 services:
   # Isolated Redis instance for host-run pytest. Not part of normal `docker compose up`.
   redis-test:

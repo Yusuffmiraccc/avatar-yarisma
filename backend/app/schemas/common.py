@@ -17,7 +17,7 @@ T = TypeVar("T")
 
 def _no_float(v):
     if isinstance(v, (float, bool)):
-        raise ValueError("Para ve miktar alanları JSON string olarak gönderilmelidir.")
+        raise ValueError("Para ve miktar alanları JSON string olarak gönderilmelidir.")  # noqa: TRY004 pydantic needs ValueError
     return v
 
 
@@ -48,7 +48,7 @@ class ApiModel(BaseModel):
         return v
 
 
-class Page(ApiModel, Generic[T]):
+class Page(ApiModel, Generic[T]):  # noqa: UP046
     items: list[T]
     page: int
     page_size: int

@@ -1,21 +1,21 @@
 """initial schema
 
-Revision ID: 2d87a7f6bfdf
+Revision ID: 25b2c2624266
 Revises: 
-Create Date: 2026-10-22 17:36:42.374106
+Create Date: 2026-10-23 17:25:06.509402
 
 """
-from collections.abc import Sequence
+from typing import Sequence, Union
 
-import sqlalchemy as sa
 from alembic import op
+import sqlalchemy as sa
 from sqlalchemy.dialects import mysql
 
 # revision identifiers, used by Alembic.
-revision: str = '2d87a7f6bfdf'
-down_revision: str | Sequence[str] | None = None
-branch_labels: str | Sequence[str] | None = None
-depends_on: str | Sequence[str] | None = None
+revision: str = '25b2c2624266'
+down_revision: Union[str, Sequence[str], None] = None
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
@@ -215,7 +215,6 @@ def upgrade() -> None:
     sa.Column('name', sa.String(length=160), nullable=False),
     sa.Column('product_type', sa.String(length=32), nullable=False),
     sa.Column('base_unit_code', sa.String(length=16), nullable=False),
-    sa.Column('is_lot_tracked', sa.Boolean(), nullable=False),
     sa.Column('requires_expiry_date', sa.Boolean(), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('created_at', sa.DateTime().with_variant(mysql.DATETIME(fsp=6), 'mysql'), nullable=False),
@@ -270,18 +269,6 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['customer_id'], ['customers.id'], name=op.f('fk_shipments_customer_id_customers')),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_shipments')),
     sa.UniqueConstraint('shipment_code', name=op.f('uq_shipments_shipment_code'))
-    )
-    op.create_table('unit_conversions',
-    sa.Column('id', sa.BigInteger().with_variant(mysql.BIGINT(unsigned=True), 'mysql').with_variant(sa.Integer(), 'sqlite'), autoincrement=True, nullable=False),
-    sa.Column('from_unit_code', sa.String(length=16), nullable=False),
-    sa.Column('to_unit_code', sa.String(length=16), nullable=False),
-    sa.Column('factor', sa.Numeric(precision=19, scale=9), nullable=False),
-    sa.Column('created_at', sa.DateTime().with_variant(mysql.DATETIME(fsp=6), 'mysql'), nullable=False),
-    sa.CheckConstraint('factor > 0', name=op.f('ck_unit_conversions_factor_positive')),
-    sa.ForeignKeyConstraint(['from_unit_code'], ['units.code'], name=op.f('fk_unit_conversions_from_unit_code_units')),
-    sa.ForeignKeyConstraint(['to_unit_code'], ['units.code'], name=op.f('fk_unit_conversions_to_unit_code_units')),
-    sa.PrimaryKeyConstraint('id', name=op.f('pk_unit_conversions')),
-    sa.UniqueConstraint('from_unit_code', 'to_unit_code', name=op.f('uq_unit_conversions_from_unit_code'))
     )
     op.create_table('user_roles',
     sa.Column('user_id', sa.BigInteger().with_variant(mysql.BIGINT(unsigned=True), 'mysql').with_variant(sa.Integer(), 'sqlite'), nullable=False),
@@ -699,7 +686,6 @@ def downgrade() -> None:
     op.drop_table('lots')
     op.drop_table('butchering_recipe_lines')
     op.drop_table('user_roles')
-    op.drop_table('unit_conversions')
     op.drop_table('shipments')
     op.drop_table('refresh_sessions')
     op.drop_table('recalls')

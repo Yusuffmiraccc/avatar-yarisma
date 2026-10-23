@@ -4,6 +4,8 @@ Dürüstlük kuralları: her zaman basit bir baseline ile karşılaştırılır;
 baseline kullanılır ve sınırlılık notu üretilir; performans iddiası yalnızca ölçülen metriklerdir.
 """
 
+import hashlib
+import hmac
 import os
 import tempfile
 from datetime import UTC, datetime
@@ -18,6 +20,8 @@ from sklearn.linear_model import Ridge
 from sklearn.model_selection import KFold
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
+
+from app.core.config import get_settings
 
 MIN_SAMPLES = 30
 PROD_NUM = ["total_input_kg", "main_share", "other_ratio", "cost_per_kg", "month"]
@@ -214,12 +218,22 @@ def save(art: dict, path: str) -> None:
     os.close(fd)
     try:
         joblib.dump(art, temp_path)
+        sig = _sign(temp_path)
         os.replace(temp_path, target)
+        Path(f"{target}.sig").write_text(sig)
     finally:
         if os.path.exists(temp_path):
             os.unlink(temp_path)
 
 
+def _sign(path: str | Path) -> str:
+    key = get_settings().jwt_secret_key.get_secret_value().encode()
+    return hmac.new(key, Path(path).read_bytes(), hashlib.sha256).hexdigest()
+
+
 def load(path: str) -> dict:
-    """Load trusted local artifacts only; joblib/pickle may execute code on load."""
+    """joblib/pickle runs code on load, so verify the HMAC written by save() first."""
+    sig_file = Path(f"{path}.sig")
+    if not sig_file.exists() or not hmac.compare_digest(sig_file.read_text().strip(), _sign(path)):
+        raise ValueError("Model artifact signature is missing or invalid")
     return joblib.load(path)

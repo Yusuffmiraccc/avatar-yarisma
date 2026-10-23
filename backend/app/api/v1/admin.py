@@ -24,7 +24,15 @@ from app.models import (
 )
 from app.models.types import utcnow
 from app.schemas.catalog import CustomerOut, LotOut, ProductOut
-from app.schemas.common import ApiModel, Dec, Page, PageParams, normalize_utc, paginate
+from app.schemas.common import (
+    ApiModel,
+    Dec,
+    Page,
+    PageParams,
+    normalize_utc,
+    paginate,
+    redact_cost_data,
+)
 from app.services import audit
 
 router = APIRouter(tags=["admin"])
@@ -143,7 +151,7 @@ class AuditOut(ApiModel):
 
 @router.get("/audit-events", response_model=Page[AuditOut])
 def audit_events(db: DB, p: PP, entity_type: str | None = None, entity_id: int | None = None, action: str | None = None,
-                 actor_user_id: int | None = None, _=require("audit:read")):
+                 actor_user_id: int | None = None, user=require("audit:read")):
     """Geçmişe dönük inceleme: kim, ne zaman, hangi kayıt üzerinde ne yaptı."""
     stmt = select(AuditEvent).order_by(AuditEvent.id.desc())
     if entity_type:
@@ -154,7 +162,8 @@ def audit_events(db: DB, p: PP, entity_type: str | None = None, entity_id: int |
         stmt = stmt.where(AuditEvent.action == action)
     if actor_user_id is not None:
         stmt = stmt.where(AuditEvent.actor_user_id == actor_user_id)
-    return paginate(db, stmt, p)
+    page = paginate(db, stmt, p)
+    return page if "costs:read" in user.permissions else redact_cost_data(page)
 
 
 class SellableLot(LotOut):

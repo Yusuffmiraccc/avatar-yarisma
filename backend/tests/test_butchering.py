@@ -32,7 +32,7 @@ def test_source_inconsistency_is_flagged_not_fixed(client, auth):
     h = auth("ADMIN")
     oid, _, _ = setup_lamb(client, h)
     o = client.get(f"/api/v1/butchering-orders/{oid}", headers=h).json()
-    f = [x for x in o["findings"] if x["code"] == "SOURCE_COST_MISMATCH"][0]
+    f = next(x for x in o["findings"] if x["code"] == "SOURCE_COST_MISMATCH")
     assert f["details"] == {"computed_total": "287.5000", "declared_total": "351.0000", "difference": "63.5000"}
     assert o["total_purchase_cost"] == "351.0000"  # sessizce düzeltilmedi
     alerts = client.get("/api/v1/alerts", headers=h).json()
@@ -168,5 +168,5 @@ def test_recipe_expected_vs_actual(client, auth):
                 json={"actual_weight": "3", "reason_code": "BONE_WASTE"})
     r = client.post(f"/api/v1/butchering-orders/{oid}/complete", headers=h, json={"outputs": outs(p)})
     assert r.status_code == 200, r.text
-    but = [o for o in r.json()["outputs"] if o["lot_code"] == "KUZU-BUT-001"][0]
+    but = next(o for o in r.json()["outputs"] if o["lot_code"] == "KUZU-BUT-001")
     assert but["expected_weight"] == "10.000000" and but["deviation_weight"] == "2.000000"

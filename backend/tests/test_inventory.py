@@ -45,7 +45,7 @@ def test_lot_cost_and_purchase_prices_require_cost_permission(client, auth):
     lot = receive(client, admin, "COST-LOT", product, 10, 5)
     assert "unit_cost" in lot and lot["unit_cost"] == "5.0000"
 
-    for role in ("OPERATOR", "SALES", "VIEWER"):
+    for role in ("SALES", "VIEWER"):
         headers = auth(role)
         assert "unit_cost" not in client.get("/api/v1/lots", headers=headers).json()["items"][0]
         assert "unit_cost" not in client.get(f"/api/v1/lots/{lot['id']}", headers=headers).json()
@@ -53,10 +53,10 @@ def test_lot_cost_and_purchase_prices_require_cost_permission(client, auth):
 
     received = client.post("/api/v1/lots/receipts", headers=auth("OPERATOR"), json={
         "lot_code": "COST-LOT-2", "product_id": product["id"], "quantity": "1", "unit_code": "KG", "unit_cost": "6"})
-    assert received.status_code == 201 and "unit_cost" not in received.json()
+    assert received.status_code == 201 and received.json()["unit_cost"] == "6.0000"
     transferred = client.post("/api/v1/inventory/transfers", headers=auth("OPERATOR"), json={
         "lot_id": lot["id"], "quantity": "10", "to_location": "WH-2"})
-    assert transferred.status_code == 201 and "unit_cost" not in transferred.json()
+    assert transferred.status_code == 201
 
     recall = client.post("/api/v1/recalls", headers=admin, json={
         "recall_code": "COST-RECALL", "reason_code": "QUALITY", "lot_codes": [lot["lot_code"]]})

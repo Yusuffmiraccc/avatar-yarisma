@@ -20,7 +20,6 @@ class ProductIn(BaseModel):
     name: str = Field(min_length=1, max_length=160)
     product_type: ProductType
     base_unit_code: str
-    is_lot_tracked: bool = True
     requires_expiry_date: bool = False
 
 
@@ -36,7 +35,6 @@ class ProductOut(ApiModel):
     name: str
     product_type: str
     base_unit_code: str
-    is_lot_tracked: bool
     requires_expiry_date: bool
     is_active: bool
     updated_at: datetime | None = None

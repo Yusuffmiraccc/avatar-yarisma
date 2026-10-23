@@ -20,7 +20,7 @@ services:
         fi
         exec /usr/local/bin/docker-entrypoint.sh mysqld
     ports:
-      - "127.0.0.1:16379:6379"
+      - "127.0.0.1:3307:3306"
     volumes:
       - avatar_mysql_data:/var/lib/mysql
     healthcheck:
@@ -34,7 +34,7 @@ services:
     restart: unless-stopped
     environment:
       ENVIRONMENT: ${ENVIRONMENT:-local}
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-avatar-test-only}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-change-me-local-only}
     command:
       - /bin/sh
       - -ec
