@@ -1,0 +1,432 @@
+{
+  "dataset": "data/raw/sucuk_uretim_1000_simule_parti.csv",
+  "synthetic_records": 1000,
+  "train_records": 800,
+  "test_records": 200,
+  "data_quality_checks": {
+    "invalid_nonpositive_yield_records": 0,
+    "negative_total_cost_records": 0,
+    "target_formula": "EKP_TL_kg = Toplam_parti_maliyeti_TL / Net_sucuk_ciktisi_kg_simule"
+  },
+  "split": {
+    "method": "train_test_split",
+    "test_size": 0.2,
+    "random_state": 42
+  },
+  "data_limit": "1.000 kaydın tamamı sentetik/simüledir; workbook sözlüğü kayıp oranlarını gerçek tartım değil simülasyon olarak tanımlar. Sonuçlar gerçek fabrika performansını kanıtlamaz.",
+  "leakage_audit": {
+    "scenario_A_features": [
+      "Et_girdi_kg",
+      "Kuyruk_yagi_girdi_kg",
+      "Baharat_girdi_kg",
+      "Tuz_girdi_kg",
+      "Diger_kucuk_girdi_kg",
+      "Kilif_metre",
+      "Et_fiyat_TL_kg",
+      "Kuyruk_yagi_fiyat_TL_kg",
+      "Baharat_fiyat_TL_kg",
+      "Tuz_fiyat_TL_kg",
+      "Kilif_fiyat_TL_m",
+      "Fason_birim_bedel_TL_kg_girdi",
+      "Iscilik_maliyeti_TL_saat",
+      "Elektrik_fiyati_TL_kWh",
+      "Ambalaj_TL_kg_net_urun",
+      "Bolge",
+      "Recete_profili",
+      "Isleme_modeli"
+    ],
+    "scenario_B_only_additional_features": [
+      "Kuruma_kaybi_pct",
+      "Ayiklama_fire_pct"
+    ],
+    "excluded_predictors": [
+      "Toplam_parti_maliyeti_TL",
+      "Net_sucuk_ciktisi_kg_simule",
+      "EKP_TL_kg",
+      "Karisim_girdi_toplam_kg (türetilmiş girdi toplamı)",
+      "gerçekleşmiş işçilik saati",
+      "gerçekleşmiş elektrik tüketimi",
+      "gerçekleşmiş maliyet bileşenleri",
+      "Et_maliyet_payi_pct"
+    ],
+    "measurement_timing": "XLSX Degisken_Sozlugu kayıp oranlarını simüle/gerçek tartım değil diye tanımlar. Girdi miktarı/kategori ve fiyat/tarife alanlarının parti bazlı zaman damgası yok; üretim öncesi erişilebilirliği gerçek veride doğrulanmalıdır.",
+    "target_derived_fields_excluded": [
+      "Karisim_girdi_toplam_kg",
+      "Direkt_malzeme_toplam_TL",
+      "Toplam_parti_maliyeti_TL",
+      "EKP_TL_kg",
+      "Et_maliyet_payi_pct"
+    ]
+  },
+  "ekp_integrity": {
+    "formula": "Toplam_parti_maliyeti_TL / Net_sucuk_ciktisi_kg_simule",
+    "units": "TL / kg net = TL/kg",
+    "max_abs_ratio_difference_tl_per_kg": 0.01594573854504233,
+    "mean_abs_ratio_difference_tl_per_kg": 0.0029824531859102307,
+    "negative_cost_records": 0,
+    "nonpositive_yield_records": 0,
+    "ekp_by_processing_mode": {
+      "Fason": {
+        "records": 338,
+        "mean": 937.255650887574,
+        "std": 68.96902510157967,
+        "min": 806.71,
+        "median": 924.815,
+        "max": 1147.96
+      },
+      "Kurum içi": {
+        "records": 662,
+        "mean": 919.1546676737158,
+        "std": 62.940203943354014,
+        "min": 804.45,
+        "median": 906.685,
+        "max": 1122.79
+      }
+    }
+  },
+  "models": {
+    "yield_random_forest_scenario_A": {
+      "target": "Net_sucuk_ciktisi_kg_simule",
+      "features": [
+        "Et_girdi_kg",
+        "Kuyruk_yagi_girdi_kg",
+        "Baharat_girdi_kg",
+        "Tuz_girdi_kg",
+        "Diger_kucuk_girdi_kg",
+        "Kilif_metre",
+        "Et_fiyat_TL_kg",
+        "Kuyruk_yagi_fiyat_TL_kg",
+        "Baharat_fiyat_TL_kg",
+        "Tuz_fiyat_TL_kg",
+        "Kilif_fiyat_TL_m",
+        "Fason_birim_bedel_TL_kg_girdi",
+        "Iscilik_maliyeti_TL_saat",
+        "Elektrik_fiyati_TL_kWh",
+        "Ambalaj_TL_kg_net_urun",
+        "Bolge",
+        "Recete_profili",
+        "Isleme_modeli"
+      ],
+      "scenario": "A: production-before; feature timing remains to be confirmed",
+      "metrics": {
+        "mae": 12.167099905303589,
+        "rmse": 16.478843189867902,
+        "r2": 0.9710722802486345,
+        "mean_baseline_mae": 83.10694375000001,
+        "median_baseline_mae_test_median_descriptive": 83.08341499999999,
+        "improvement_over_mean_baseline_pct": 85.35970719618288,
+        "test_records": 200
+      }
+    },
+    "yield_extra_trees_scenario_A": {
+      "target": "Net_sucuk_ciktisi_kg_simule",
+      "features": [
+        "Et_girdi_kg",
+        "Kuyruk_yagi_girdi_kg",
+        "Baharat_girdi_kg",
+        "Tuz_girdi_kg",
+        "Diger_kucuk_girdi_kg",
+        "Kilif_metre",
+        "Et_fiyat_TL_kg",
+        "Kuyruk_yagi_fiyat_TL_kg",
+        "Baharat_fiyat_TL_kg",
+        "Tuz_fiyat_TL_kg",
+        "Kilif_fiyat_TL_m",
+        "Fason_birim_bedel_TL_kg_girdi",
+        "Iscilik_maliyeti_TL_saat",
+        "Elektrik_fiyati_TL_kWh",
+        "Ambalaj_TL_kg_net_urun",
+        "Bolge",
+        "Recete_profili",
+        "Isleme_modeli"
+      ],
+      "scenario": "A: production-before; feature timing remains to be confirmed",
+      "metrics": {
+        "mae": 11.53898121904762,
+        "rmse": 15.519536441683998,
+        "r2": 0.9743422688994895,
+        "mean_baseline_mae": 83.10694375000001,
+        "median_baseline_mae_test_median_descriptive": 83.08341499999999,
+        "improvement_over_mean_baseline_pct": 86.11550287090466,
+        "test_records": 200
+      }
+    },
+    "yield_mass_balance_realized_loss_diagnostic": {
+      "target": "Net_sucuk_ciktisi_kg_simule",
+      "features": [
+        "ingredient inputs",
+        "Kuruma_kaybi_pct",
+        "Ayiklama_fire_pct"
+      ],
+      "scenario": "Diagnostic only: realized loss values; unavailable pre-run unless verified planning assumptions",
+      "metrics": {
+        "mae": 0.0002606108927971462,
+        "rmse": 0.00029326625027211345,
+        "r2": 0.9999999999908381,
+        "mean_baseline_mae": 83.10694375000001,
+        "median_baseline_mae_test_median_descriptive": 83.08341499999999,
+        "improvement_over_mean_baseline_pct": 99.99968641502018,
+        "test_records": 200
+      },
+      "formula": "ingredient input sum * (1-drying loss/100) * (1-trimming loss/100)"
+    },
+    "yield_random_forest_scenario_B": {
+      "target": "Net_sucuk_ciktisi_kg_simule",
+      "features": [
+        "Et_girdi_kg",
+        "Kuyruk_yagi_girdi_kg",
+        "Baharat_girdi_kg",
+        "Tuz_girdi_kg",
+        "Diger_kucuk_girdi_kg",
+        "Kilif_metre",
+        "Et_fiyat_TL_kg",
+        "Kuyruk_yagi_fiyat_TL_kg",
+        "Baharat_fiyat_TL_kg",
+        "Tuz_fiyat_TL_kg",
+        "Kilif_fiyat_TL_m",
+        "Fason_birim_bedel_TL_kg_girdi",
+        "Iscilik_maliyeti_TL_saat",
+        "Elektrik_fiyati_TL_kWh",
+        "Ambalaj_TL_kg_net_urun",
+        "Bolge",
+        "Recete_profili",
+        "Isleme_modeli",
+        "Kuruma_kaybi_pct",
+        "Ayiklama_fire_pct"
+      ],
+      "scenario": "B: loss rates are user-entered planning assumptions; timing not established by dataset",
+      "metrics": {
+        "mae": 5.65349750937589,
+        "rmse": 7.832437949392807,
+        "r2": 0.9934648631683188,
+        "mean_baseline_mae": 83.10694375000001,
+        "median_baseline_mae_test_median_descriptive": 83.10694375000001,
+        "improvement_over_mean_baseline_pct": 93.1973223243745,
+        "test_records": 200
+      }
+    },
+    "ekp_random_forest_scenario_A": {
+      "target": "EKP_TL_kg",
+      "features": [
+        "Et_girdi_kg",
+        "Kuyruk_yagi_girdi_kg",
+        "Baharat_girdi_kg",
+        "Tuz_girdi_kg",
+        "Diger_kucuk_girdi_kg",
+        "Kilif_metre",
+        "Et_fiyat_TL_kg",
+        "Kuyruk_yagi_fiyat_TL_kg",
+        "Baharat_fiyat_TL_kg",
+        "Tuz_fiyat_TL_kg",
+        "Kilif_fiyat_TL_m",
+        "Fason_birim_bedel_TL_kg_girdi",
+        "Iscilik_maliyeti_TL_saat",
+        "Elektrik_fiyati_TL_kWh",
+        "Ambalaj_TL_kg_net_urun",
+        "Bolge",
+        "Recete_profili",
+        "Isleme_modeli"
+      ],
+      "scenario": "A: production-before features",
+      "metrics": {
+        "mae": 49.87229789518655,
+        "rmse": 61.223635943775854,
+        "r2": 0.10702942214335909,
+        "mean_baseline_mae": 51.67554149999998,
+        "median_baseline_mae_test_median_descriptive": 51.571200000000005,
+        "improvement_over_mean_baseline_pct": 3.489549509245937,
+        "test_records": 200
+      }
+    },
+    "ekp_extra_trees_scenario_A": {
+      "target": "EKP_TL_kg",
+      "features": [
+        "Et_girdi_kg",
+        "Kuyruk_yagi_girdi_kg",
+        "Baharat_girdi_kg",
+        "Tuz_girdi_kg",
+        "Diger_kucuk_girdi_kg",
+        "Kilif_metre",
+        "Et_fiyat_TL_kg",
+        "Kuyruk_yagi_fiyat_TL_kg",
+        "Baharat_fiyat_TL_kg",
+        "Tuz_fiyat_TL_kg",
+        "Kilif_fiyat_TL_m",
+        "Fason_birim_bedel_TL_kg_girdi",
+        "Iscilik_maliyeti_TL_saat",
+        "Elektrik_fiyati_TL_kWh",
+        "Ambalaj_TL_kg_net_urun",
+        "Bolge",
+        "Recete_profili",
+        "Isleme_modeli"
+      ],
+      "scenario": "A: production-before features",
+      "metrics": {
+        "mae": 51.09261811428574,
+        "rmse": 63.119823941813564,
+        "r2": 0.05085957333372293,
+        "mean_baseline_mae": 51.67554149999998,
+        "median_baseline_mae_test_median_descriptive": 51.571200000000005,
+        "improvement_over_mean_baseline_pct": 1.128045045670667,
+        "test_records": 200
+      }
+    },
+    "ekp_random_forest_scenario_B": {
+      "target": "EKP_TL_kg",
+      "features": [
+        "Et_girdi_kg",
+        "Kuyruk_yagi_girdi_kg",
+        "Baharat_girdi_kg",
+        "Tuz_girdi_kg",
+        "Diger_kucuk_girdi_kg",
+        "Kilif_metre",
+        "Et_fiyat_TL_kg",
+        "Kuyruk_yagi_fiyat_TL_kg",
+        "Baharat_fiyat_TL_kg",
+        "Tuz_fiyat_TL_kg",
+        "Kilif_fiyat_TL_m",
+        "Fason_birim_bedel_TL_kg_girdi",
+        "Iscilik_maliyeti_TL_saat",
+        "Elektrik_fiyati_TL_kWh",
+        "Ambalaj_TL_kg_net_urun",
+        "Bolge",
+        "Recete_profili",
+        "Isleme_modeli",
+        "Kuruma_kaybi_pct",
+        "Ayiklama_fire_pct"
+      ],
+      "scenario": "B: drying and trimming losses supplied as planning assumptions; timing unverified",
+      "metrics": {
+        "mae": 12.848508927297766,
+        "rmse": 16.939171191779756,
+        "r2": 0.9316429632037054,
+        "mean_baseline_mae": 51.67554149999998,
+        "median_baseline_mae_test_median_descriptive": 51.571200000000005,
+        "improvement_over_mean_baseline_pct": 75.13618908609256,
+        "test_records": 200
+      }
+    },
+    "ekp_extra_trees_scenario_B": {
+      "target": "EKP_TL_kg",
+      "features": [
+        "Et_girdi_kg",
+        "Kuyruk_yagi_girdi_kg",
+        "Baharat_girdi_kg",
+        "Tuz_girdi_kg",
+        "Diger_kucuk_girdi_kg",
+        "Kilif_metre",
+        "Et_fiyat_TL_kg",
+        "Kuyruk_yagi_fiyat_TL_kg",
+        "Baharat_fiyat_TL_kg",
+        "Tuz_fiyat_TL_kg",
+        "Kilif_fiyat_TL_m",
+        "Fason_birim_bedel_TL_kg_girdi",
+        "Iscilik_maliyeti_TL_saat",
+        "Elektrik_fiyati_TL_kWh",
+        "Ambalaj_TL_kg_net_urun",
+        "Bolge",
+        "Recete_profili",
+        "Isleme_modeli",
+        "Kuruma_kaybi_pct",
+        "Ayiklama_fire_pct"
+      ],
+      "scenario": "B: drying and trimming losses supplied as planning assumptions; timing unverified",
+      "metrics": {
+        "mae": 10.469691166666623,
+        "rmse": 14.240132668926103,
+        "r2": 0.9516911182179507,
+        "mean_baseline_mae": 51.67554149999998,
+        "median_baseline_mae_test_median_descriptive": 51.571200000000005,
+        "improvement_over_mean_baseline_pct": 79.7395617679853,
+        "test_records": 200
+      }
+    },
+    "total_cost_random_forest_scenario_A": {
+      "target": "Toplam_parti_maliyeti_TL",
+      "features": [
+        "Et_girdi_kg",
+        "Kuyruk_yagi_girdi_kg",
+        "Baharat_girdi_kg",
+        "Tuz_girdi_kg",
+        "Diger_kucuk_girdi_kg",
+        "Kilif_metre",
+        "Et_fiyat_TL_kg",
+        "Kuyruk_yagi_fiyat_TL_kg",
+        "Baharat_fiyat_TL_kg",
+        "Tuz_fiyat_TL_kg",
+        "Kilif_fiyat_TL_m",
+        "Fason_birim_bedel_TL_kg_girdi",
+        "Iscilik_maliyeti_TL_saat",
+        "Elektrik_fiyati_TL_kWh",
+        "Ambalaj_TL_kg_net_urun",
+        "Bolge",
+        "Recete_profili",
+        "Isleme_modeli"
+      ],
+      "scenario": "A total-cost predictor; realized total cost is target only, never a feature",
+      "metrics": {
+        "mae": 3911.049241912639,
+        "rmse": 5316.7696321754765,
+        "r2": 0.9964381225039843,
+        "mean_baseline_mae": 76995.323475,
+        "median_baseline_mae_test_median_descriptive": 76734.1741,
+        "improvement_over_mean_baseline_pct": 94.92040676576605,
+        "test_records": 200
+      }
+    },
+    "ekp_predicted_cost_over_predicted_yield_scenario_A": {
+      "target": "EKP_TL_kg",
+      "features": [
+        "Et_girdi_kg",
+        "Kuyruk_yagi_girdi_kg",
+        "Baharat_girdi_kg",
+        "Tuz_girdi_kg",
+        "Diger_kucuk_girdi_kg",
+        "Kilif_metre",
+        "Et_fiyat_TL_kg",
+        "Kuyruk_yagi_fiyat_TL_kg",
+        "Baharat_fiyat_TL_kg",
+        "Tuz_fiyat_TL_kg",
+        "Kilif_fiyat_TL_m",
+        "Fason_birim_bedel_TL_kg_girdi",
+        "Iscilik_maliyeti_TL_saat",
+        "Elektrik_fiyati_TL_kWh",
+        "Ambalaj_TL_kg_net_urun",
+        "Bolge",
+        "Recete_profili",
+        "Isleme_modeli"
+      ],
+      "cost_target": "Toplam_parti_maliyeti_TL",
+      "yield_model": "yield_random_forest_scenario_A",
+      "scenario": "A; component-wise cost forecast is not supported by available pre-run measurements; estimates total cost then divides by predicted net output",
+      "metrics": {
+        "mae": 53.540941574784654,
+        "rmse": 67.06569975486298,
+        "r2": -0.0715188972143328,
+        "mean_baseline_mae": 51.67554149999998,
+        "median_baseline_mae_test_median_descriptive": 51.571200000000005,
+        "improvement_over_mean_baseline_pct": -3.609831693364396,
+        "test_records": 200
+      },
+      "invalid_nonpositive_yield_predictions": 0
+    }
+  },
+  "candidate_model_files": [
+    "ekp_extra_trees_A_candidate.joblib",
+    "ekp_extra_trees_B_candidate.joblib",
+    "ekp_model_candidate.joblib",
+    "ekp_random_forest_A_candidate.joblib",
+    "ekp_random_forest_B_candidate.joblib",
+    "total_cost_scenario_A_candidate.joblib",
+    "yield_extra_trees_candidate.joblib",
+    "yield_model_candidate.joblib",
+    "yield_random_forest_candidate.joblib",
+    "yield_scenario_B_candidate.joblib"
+  ],
+  "api_models_overwritten": false,
+  "production_readiness": {
+    "yield": "candidate only; synthetic-only evaluation; external validation required",
+    "ekp": "NOT READY: synthetic-only data and weak Scenario A baseline improvement do not support production use",
+    "scenario_B": "diagnostic only; loss-feature timing not verified; not saved as deployable candidate"
+  }
+}

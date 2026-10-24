@@ -1,0 +1,31 @@
+{
+  "dataset": "data\\raw\\sucuk_uretim_1000_simule_parti.csv",
+  "records_used": 1000,
+  "train_records": 800,
+  "test_records": 200,
+  "data_quality_warning": "Kayıtlar sentetik/simüle; metrikler gerçek işletme performansını temsil etmez.",
+  "models": {
+    "yield_model_candidate.joblib": {
+      "target": "Net_sucuk_ciktisi_kg_simule",
+      "metrics": {
+        "mae": 12.167099905303592,
+        "rmse": 16.478843189867906,
+        "r2": 0.9710722802486345,
+        "baseline_mean_mae": 83.10694375000001,
+        "improvement_over_mean_baseline_pct": 85.35970719618288
+      }
+    },
+    "ekp_model_candidate.joblib": {
+      "target": "EKP_TL_kg",
+      "metrics": {
+        "mae": 49.87229789518656,
+        "rmse": 61.22363594377586,
+        "r2": 0.10702942214335898,
+        "baseline_mean_mae": 51.67554149999998,
+        "improvement_over_mean_baseline_pct": 3.489549509245915
+      }
+    }
+  },
+  "api_models_overwritten": false,
+  "data_limit": "1.000 kaydın tamamı sentetik/simüledir; sonuçlar gerçek fabrika performansını kanıtlamaz."
+}

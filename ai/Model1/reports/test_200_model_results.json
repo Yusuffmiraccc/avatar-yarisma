@@ -1,0 +1,160 @@
+{
+  "dataset": "data\\raw\\sucuk_uretim_1000_simule_parti.csv",
+  "dataset_rows": 1000,
+  "train_rows": 800,
+  "test_rows": 200,
+  "split": {
+    "test_size": 0.2,
+    "random_state": 42
+  },
+  "note": "Bu test bölümü, modeller gerçekten aynı split ile eğitildiyse bağımsız test olarak yorumlanabilir. Veri simüle edilmiştir.",
+  "yield_model": {
+    "n": 200,
+    "MAE": 12.167099905303589,
+    "RMSE": 16.478843189867906,
+    "R2": 0.9710722802486345,
+    "baseline_median_MAE": 83.08341499999999,
+    "baseline_median_RMSE": 97.2579114799151,
+    "MAE_baseline_improvement_pct": 85.35556114863166
+  },
+  "ekp_model": {
+    "n": 200,
+    "MAE": 49.87229789518655,
+    "RMSE": 61.22363594377584,
+    "R2": 0.10702942214335953,
+    "baseline_median_MAE": 51.571200000000005,
+    "baseline_median_RMSE": 67.56462135615061,
+    "MAE_baseline_improvement_pct": 3.2942846100409873
+  },
+  "yield_features": [
+    "Et_girdi_kg",
+    "Kuyruk_yagi_girdi_kg",
+    "Baharat_girdi_kg",
+    "Tuz_girdi_kg",
+    "Diger_kucuk_girdi_kg",
+    "Kilif_metre",
+    "Et_fiyat_TL_kg",
+    "Kuyruk_yagi_fiyat_TL_kg",
+    "Baharat_fiyat_TL_kg",
+    "Tuz_fiyat_TL_kg",
+    "Kilif_fiyat_TL_m",
+    "Fason_birim_bedel_TL_kg_girdi",
+    "Iscilik_maliyeti_TL_saat",
+    "Elektrik_fiyati_TL_kWh",
+    "Ambalaj_TL_kg_net_urun",
+    "Bolge",
+    "Recete_profili",
+    "Isleme_modeli"
+  ],
+  "ekp_features": [
+    "Et_girdi_kg",
+    "Kuyruk_yagi_girdi_kg",
+    "Baharat_girdi_kg",
+    "Tuz_girdi_kg",
+    "Diger_kucuk_girdi_kg",
+    "Kilif_metre",
+    "Et_fiyat_TL_kg",
+    "Kuyruk_yagi_fiyat_TL_kg",
+    "Baharat_fiyat_TL_kg",
+    "Tuz_fiyat_TL_kg",
+    "Kilif_fiyat_TL_m",
+    "Fason_birim_bedel_TL_kg_girdi",
+    "Iscilik_maliyeti_TL_saat",
+    "Elektrik_fiyati_TL_kWh",
+    "Ambalaj_TL_kg_net_urun",
+    "Bolge",
+    "Recete_profili",
+    "Isleme_modeli"
+  ],
+  "worst_ekp_cases": [
+    {
+      "test_no": 51,
+      "source_row_index": 570,
+      "EKP_TL_kg": 1147.96,
+      "predicted_ekp_tl_kg": 957.9597782312924,
+      "ekp_abs_error_tl_kg": 190.00022176870766,
+      "ekp_abs_pct_error": 16.551118659945264
+    },
+    {
+      "test_no": 6,
+      "source_row_index": 678,
+      "EKP_TL_kg": 1108.48,
+      "predicted_ekp_tl_kg": 934.5831716439908,
+      "ekp_abs_error_tl_kg": 173.89682835600922,
+      "ekp_abs_pct_error": 15.687863412601871
+    },
+    {
+      "test_no": 20,
+      "source_row_index": 319,
+      "EKP_TL_kg": 1131.24,
+      "predicted_ekp_tl_kg": 971.8018228798194,
+      "ekp_abs_error_tl_kg": 159.43817712018063,
+      "ekp_abs_pct_error": 14.094107096653286
+    },
+    {
+      "test_no": 73,
+      "source_row_index": 590,
+      "EKP_TL_kg": 1013.32,
+      "predicted_ekp_tl_kg": 876.0249073376616,
+      "ekp_abs_error_tl_kg": 137.29509266233845,
+      "ekp_abs_pct_error": 13.5490361053111
+    },
+    {
+      "test_no": 183,
+      "source_row_index": 377,
+      "EKP_TL_kg": 1056.75,
+      "predicted_ekp_tl_kg": 919.7062706802714,
+      "ekp_abs_error_tl_kg": 137.04372931972864,
+      "ekp_abs_pct_error": 12.968415360277136
+    },
+    {
+      "test_no": 44,
+      "source_row_index": 974,
+      "EKP_TL_kg": 1053.45,
+      "predicted_ekp_tl_kg": 917.2208330158726,
+      "ekp_abs_error_tl_kg": 136.22916698412746,
+      "ekp_abs_pct_error": 12.931716453949162
+    },
+    {
+      "test_no": 61,
+      "source_row_index": 296,
+      "EKP_TL_kg": 1033.7,
+      "predicted_ekp_tl_kg": 900.0005419727894,
+      "ekp_abs_error_tl_kg": 133.69945802721065,
+      "ekp_abs_pct_error": 12.934067720538902
+    },
+    {
+      "test_no": 149,
+      "source_row_index": 822,
+      "EKP_TL_kg": 1075.99,
+      "predicted_ekp_tl_kg": 942.5864126077103,
+      "ekp_abs_error_tl_kg": 133.40358739228975,
+      "ekp_abs_pct_error": 12.398218142574722
+    },
+    {
+      "test_no": 50,
+      "source_row_index": 837,
+      "EKP_TL_kg": 1035.64,
+      "predicted_ekp_tl_kg": 909.2613909183679,
+      "ekp_abs_error_tl_kg": 126.37860908163225,
+      "ekp_abs_pct_error": 12.202947846899717
+    },
+    {
+      "test_no": 54,
+      "source_row_index": 578,
+      "EKP_TL_kg": 1022.09,
+      "predicted_ekp_tl_kg": 902.5476822789108,
+      "ekp_abs_error_tl_kg": 119.54231772108926,
+      "ekp_abs_pct_error": 11.695870003726604
+    }
+  ],
+  "model_hashes_before": {
+    "yield_model.joblib": "0ef1990770c1ad2a8a9deb57f356559b9165a19d65f9155c58bb4f9db4b46bca",
+    "ekp_model.joblib": "aae0a3538e0c57dff7fc12bc8d20961f4802644b2f4a4cde40eb49d375e9b802"
+  },
+  "model_hashes_after": {
+    "yield_model.joblib": "0ef1990770c1ad2a8a9deb57f356559b9165a19d65f9155c58bb4f9db4b46bca",
+    "ekp_model.joblib": "aae0a3538e0c57dff7fc12bc8d20961f4802644b2f4a4cde40eb49d375e9b802"
+  },
+  "model_files_unchanged": true
+}
