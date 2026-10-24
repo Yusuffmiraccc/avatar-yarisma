@@ -1,0 +1,79 @@
+{
+  "evaluation_type": "chronological_expanding_window",
+  "target": "total_cost_tl / measured net_output_kg; TRY/kg",
+  "data_type": "real production records only",
+  "source_type_separation": "synthetic and external benchmark rows are rejected, not mixed",
+  "production_before_features": [
+    "Et_girdi_kg",
+    "Kuyruk_yagi_girdi_kg",
+    "Baharat_girdi_kg",
+    "Tuz_girdi_kg",
+    "Diger_kucuk_girdi_kg",
+    "Kilif_metre",
+    "Et_fiyat_TL_kg",
+    "Kuyruk_yagi_fiyat_TL_kg",
+    "Baharat_fiyat_TL_kg",
+    "Tuz_fiyat_TL_kg",
+    "Kilif_fiyat_TL_m",
+    "Fason_birim_bedel_TL_kg_girdi",
+    "Iscilik_maliyeti_TL_saat",
+    "Elektrik_fiyati_TL_kWh",
+    "Ambalaj_TL_kg_net_urun",
+    "Bolge",
+    "Recete_profili",
+    "Isleme_modeli"
+  ],
+  "excluded_target_or_postproduction_fields": [
+    "net_output_kg",
+    "total_cost_tl",
+    "cost components",
+    "observed losses",
+    "drying_loss_pct",
+    "sorting_loss_pct",
+    "labor_hours",
+    "energy_kwh"
+  ],
+  "feature_availability_gate": "all model features must come from planned_* fields and a timezone-aware plan_snapshot_at <= production_started_at",
+  "outcome_availability_gate": "record_created_at and validated_at are required; training labels must have been created and validated by the first test production timestamp",
+  "candidate_policy": "Incumbent Random Forest and the engineered GradientBoosting-Huber research-candidate architecture are refit only on each historical training window with fixed parameters; preprocessing is fit inside each window. Frozen production and synthetic research artifacts are additionally scored only when their bytes match pinned SHA-256 values; the synthetic artifact remains a diagnostic, not a production candidate.",
+  "approach_definitions": {
+    "direct_ekp": "Fit a direct EKP target model from production-before plan features.",
+    "predicted_cost_over_predicted_net_output": "Fit separate total-cost and net-output models on historical training batches; divide their test predictions. Actual test cost/output are evaluation targets only.",
+    "hybrid_known_cost_plus_predicted_residual": "Compute planned meat, tail-fat, spice, casing, and Fason service subtotal; fit remaining cost residual and net-output models on historical batches. Factory accounting scope must be confirmed."
+  },
+  "split_policy": {
+    "min_train_batches": 50,
+    "test_distinct_timestamps_per_window": 20,
+    "windows": 3,
+    "test_windows_disjoint": true
+  },
+  "severe_error_threshold_tl_kg": null,
+  "component_metric_units": {
+    "predicted_total_cost_rf": "TL/batch",
+    "predicted_total_cost_hybrid": "TL/batch",
+    "predicted_net_output_rf": "kg"
+  },
+  "status": "no_real_data",
+  "frozen_artifact_evaluation": "not_run_until_validated_real_rows_exist",
+  "validation_summary": {
+    "schema_version": "1.0",
+    "rows": 0,
+    "valid_rows": 0,
+    "eligible_for_ekp": 0,
+    "eligible_for_time_evaluation": 0,
+    "error_count": 0,
+    "warning_count": 0,
+    "issue_counts": {},
+    "issues": []
+  },
+  "metrics": {},
+  "folds": [],
+  "group_metrics": {},
+  "limitations": [
+    "No real-factory performance is measured unless status=complete and eligible chronological windows exist.",
+    "A template with no rows is expected before factory data is supplied; no synthetic fallback is used.",
+    "Direct EKP, cost/output ratio, and hybrid methods are defined for future comparison but no real-data score exists yet.",
+    "Pinned SHA-256 values detect unexpected local artifact changes; they do not prove who created an artifact or that its model is scientifically valid."
+  ],
+  "input_path": "D:\\Coding\\projectDebugging\\avatar-yarisma\\ai\\Model1\\data\\templates\\real_production_batches_template.csv"
+}

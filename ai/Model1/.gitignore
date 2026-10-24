@@ -1,10 +1,11 @@
 .venv/
 __pycache__/
 *.py[cod]
+.pytest_cache/
 .env
 models/*.joblib
-data/raw/*.csv
-data/processed/*.csv
-reports/model_evaluation.json
-reports/data_audit.md
-reports/retraining_state.json
+!models/.gitkeep
+
+# Model2 operational audit data
+Model2/var/*.sqlite3
+models/**/*.joblib

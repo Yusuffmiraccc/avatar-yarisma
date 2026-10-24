@@ -1,0 +1,40 @@
+{
+  "yield_10_record_test": {
+    "MAE": 18.06519106113177,
+    "RMSE": 24.77513700059114,
+    "R2": 0.9206763215259407,
+    "baseline_MAE": 81.45217499999998,
+    "baseline_improvement_pct": 77.82110660503324
+  },
+  "ekp_10_record_test": {
+    "MAE": 49.66466896588336,
+    "RMSE": 68.41274479120592,
+    "R2": 0.10414945782751872,
+    "baseline_MAE": 54.89734499999997,
+    "baseline_improvement_pct": 9.531746998177448
+  },
+  "notes": [
+    "Veri setindeki kayıtların tamamı simüle edilmiştir.",
+    "10 kayıtlık metrikler küçük örneklem nedeniyle kararsız olabilir.",
+    "Uyum yüzdesi = max(0, 100 - mutlak yüzde hata); sınıflandırma doğruluğu değildir.",
+    "R2 bu 10 kayıt üzerinde hesaplanır; tek başına üretim uygunluğu kanıtlamaz.",
+    "Model dosyaları yeniden eğitilmemiştir."
+  ],
+  "model_file_integrity": {
+    "yield_model.joblib": {
+      "before": "0ef1990770c1ad2a8a9deb57f356559b9165a19d65f9155c58bb4f9db4b46bca",
+      "after": "0ef1990770c1ad2a8a9deb57f356559b9165a19d65f9155c58bb4f9db4b46bca",
+      "unchanged": true
+    },
+    "ekp_model.joblib": {
+      "before": "aae0a3538e0c57dff7fc12bc8d20961f4802644b2f4a4cde40eb49d375e9b802",
+      "after": "aae0a3538e0c57dff7fc12bc8d20961f4802644b2f4a4cde40eb49d375e9b802",
+      "unchanged": true
+    }
+  },
+  "records_tested": 10,
+  "dataset": "data\\raw\\sucuk_uretim_1000_simule_parti.csv",
+  "selection": "train_test_split(test_size=0.2, random_state=42); ilk 10 test kaydı",
+  "csv_report": "D:\\Coding\\projectDebugging\\avatar-yarisma\\ai\\reports\\test_10_model_results.csv",
+  "json_report": "D:\\Coding\\projectDebugging\\avatar-yarisma\\ai\\reports\\test_10_model_results.json"
+}

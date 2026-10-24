@@ -1,0 +1,481 @@
+{
+  "dataset": "data/raw/sucuk_uretim_1000_simule_parti.csv",
+  "data_type": "synthetic/simulated only",
+  "real_factory_validation": false,
+  "target": "EKP_TL_kg",
+  "target_definition": "Toplam_parti_maliyeti_TL / Net_sucuk_ciktisi_kg_simule; TL/kg",
+  "target_distribution": {
+    "count": 1000,
+    "mean": 925.2728,
+    "std": 65.5679786250955,
+    "median": 910.61,
+    "min": 804.45,
+    "p01": 819.4656,
+    "p99": 1106.1901,
+    "max": 1147.96
+  },
+  "data_integrity": {
+    "rows": 1000,
+    "all_rows_synthetic": true,
+    "missing_required_cells": 0,
+    "duplicate_full_rows": 0,
+    "duplicate_exact_feature_rows_including_repeats": 0,
+    "ekp_formula_max_abs_diff_tl_kg": 0.01594573854504233,
+    "fason_formula_rows": 338,
+    "fason_rate_max_abs_diff_tl": 0.004999999997380655
+  },
+  "scenario_A": {
+    "features": [
+      "Et_girdi_kg",
+      "Kuyruk_yagi_girdi_kg",
+      "Baharat_girdi_kg",
+      "Tuz_girdi_kg",
+      "Diger_kucuk_girdi_kg",
+      "Kilif_metre",
+      "Et_fiyat_TL_kg",
+      "Kuyruk_yagi_fiyat_TL_kg",
+      "Baharat_fiyat_TL_kg",
+      "Tuz_fiyat_TL_kg",
+      "Kilif_fiyat_TL_m",
+      "Fason_birim_bedel_TL_kg_girdi",
+      "Iscilik_maliyeti_TL_saat",
+      "Elektrik_fiyati_TL_kWh",
+      "Ambalaj_TL_kg_net_urun",
+      "Bolge",
+      "Recete_profili",
+      "Isleme_modeli"
+    ],
+    "excluded": [
+      "EKP_TL_kg",
+      "Toplam_parti_maliyeti_TL",
+      "Net_sucuk_ciktisi_kg_simule",
+      "Kuruma_kaybi_pct",
+      "Ayiklama_fire_pct",
+      "actual labor/kWh",
+      "realized cost components",
+      "Parti_ID",
+      "Tarih_simulasyon"
+    ],
+    "timing_limit": "The synthetic file does not prove timestamped pre-production availability of prices/tariffs. Confirm with real plan snapshots."
+  },
+  "scenario_B": {
+    "status": "not a pre-production candidate",
+    "features": [
+      "Kuruma_kaybi_pct",
+      "Ayiklama_fire_pct"
+    ],
+    "reason": "Synthetic loss values; their real measurement/availability time is unverified."
+  },
+  "validation": {
+    "primary": "5-fold shuffled cross-validation on all synthetic rows; all preprocessing fitted within each training fold.",
+    "cv": {
+      "n_splits": 5,
+      "shuffle": true,
+      "random_state": 42,
+      "metrics": {
+        "dummy_mean": {
+          "mae_tl_kg": {
+            "mean": 53.329248500000006,
+            "std": 3.7109210703829416
+          },
+          "rmse_tl_kg": {
+            "mean": 65.49184956262256,
+            "std": 3.2850837632495273
+          },
+          "r2": {
+            "mean": -0.0019255156141859242,
+            "std": 0.001137421116175846
+          },
+          "mae_improvement_over_median_baseline_pct": -2.2333862176028063
+        },
+        "dummy_median": {
+          "mae_tl_kg": {
+            "mean": 52.16422,
+            "std": 3.6096985051732524
+          },
+          "rmse_tl_kg": {
+            "mean": 67.13148625117057,
+            "std": 3.0199307336630166
+          },
+          "r2": {
+            "mean": -0.053486818895779734,
+            "std": 0.031932259499988326
+          },
+          "mae_improvement_over_median_baseline_pct": 0.0
+        },
+        "random_forest_incumbent": {
+          "mae_tl_kg": {
+            "mean": 49.931428699104345,
+            "std": 3.179985466207542
+          },
+          "rmse_tl_kg": {
+            "mean": 61.26983148304957,
+            "std": 4.461352219602666
+          },
+          "r2": {
+            "mean": 0.12399825790987426,
+            "std": 0.04691732068826567
+          },
+          "mae_improvement_over_median_baseline_pct": 4.280311870657039
+        },
+        "random_forest_log_target": {
+          "mae_tl_kg": {
+            "mean": 49.425974693465626,
+            "std": 3.310188540977442
+          },
+          "rmse_tl_kg": {
+            "mean": 61.16827156011351,
+            "std": 4.622290070386542
+          },
+          "r2": {
+            "mean": 0.1270056391050532,
+            "std": 0.050710546202892885
+          },
+          "mae_improvement_over_median_baseline_pct": 5.249278732691442
+        },
+        "extra_trees": {
+          "mae_tl_kg": {
+            "mean": 50.71249887904763,
+            "std": 2.8797268928229256
+          },
+          "rmse_tl_kg": {
+            "mean": 62.77180325452862,
+            "std": 3.453629782047458
+          },
+          "r2": {
+            "mean": 0.07986591945971525,
+            "std": 0.014921533662357522
+          },
+          "mae_improvement_over_median_baseline_pct": 2.7829825135933572
+        },
+        "hist_gradient_boosting": {
+          "mae_tl_kg": {
+            "mean": 50.40632928184667,
+            "std": 2.6268448022439532
+          },
+          "rmse_tl_kg": {
+            "mean": 62.109244799844966,
+            "std": 3.8280846954848644
+          },
+          "r2": {
+            "mean": 0.09933613078449129,
+            "std": 0.03252280862254146
+          },
+          "mae_improvement_over_median_baseline_pct": 3.3699166174694595
+        },
+        "gradient_boosting_huber": {
+          "mae_tl_kg": {
+            "mean": 49.0452217203043,
+            "std": 3.4474571128431823
+          },
+          "rmse_tl_kg": {
+            "mean": 61.00575155655834,
+            "std": 4.075846901001843
+          },
+          "r2": {
+            "mean": 0.1315360906255792,
+            "std": 0.031457026940851326
+          },
+          "mae_improvement_over_median_baseline_pct": 5.979190870093909
+        },
+        "ridge": {
+          "mae_tl_kg": {
+            "mean": 50.01868527046796,
+            "std": 3.2836010707880865
+          },
+          "rmse_tl_kg": {
+            "mean": 61.106318363877904,
+            "std": 4.017744406073689
+          },
+          "r2": {
+            "mean": 0.12857647545372541,
+            "std": 0.03166506139925496
+          },
+          "mae_improvement_over_median_baseline_pct": 4.113039032371302
+        },
+        "huber_regressor": {
+          "mae_tl_kg": {
+            "mean": 49.232625277451774,
+            "std": 3.543115587151895
+          },
+          "rmse_tl_kg": {
+            "mean": 62.008239805732366,
+            "std": 4.087129065125257
+          },
+          "r2": {
+            "mean": 0.102655280136662,
+            "std": 0.0335065223878396
+          },
+          "mae_improvement_over_median_baseline_pct": 5.619933974951074
+        },
+        "engineered_gradient_boosting_huber": {
+          "mae_tl_kg": {
+            "mean": 48.986889476020636,
+            "std": 2.8173664958057416
+          },
+          "rmse_tl_kg": {
+            "mean": 60.5653380651393,
+            "std": 3.7470125498094236
+          },
+          "r2": {
+            "mean": 0.14359198083861027,
+            "std": 0.0312997238563144
+          },
+          "mae_improvement_over_median_baseline_pct": 6.091015113384934
+        },
+        "predicted_cost_over_predicted_yield_rf": {
+          "mae_tl_kg": {
+            "mean": 53.279581129231836,
+            "std": 3.1695482027872384
+          },
+          "rmse_tl_kg": {
+            "mean": 66.60225309429333,
+            "std": 3.66573578360848
+          },
+          "r2": {
+            "mean": -0.03647942158407447,
+            "std": 0.04323607843171387
+          },
+          "mae_improvement_over_median_baseline_pct": -2.138172734552213
+        },
+        "hybrid_known_cost_plus_residual_over_predicted_yield": {
+          "mae_tl_kg": {
+            "mean": 52.05673128905063,
+            "std": 1.5599189236691138
+          },
+          "rmse_tl_kg": {
+            "mean": 64.94944773248038,
+            "std": 1.7954489303943855
+          },
+          "r2": {
+            "mean": 0.011581744385304082,
+            "std": 0.06264632685658476
+          },
+          "mae_improvement_over_median_baseline_pct": 0.20605831151959686
+        }
+      }
+    },
+    "secondary_holdout": {
+      "split": {
+        "test_size": 0.2,
+        "random_state": 42
+      },
+      "train_n": 800,
+      "test_n": 200,
+      "note": "This split has already been used in previous experiments; results are exploratory, not independent final validation.",
+      "training_mean_baseline": {
+        "mae_tl_kg": 51.67554149999998,
+        "rmse_tl_kg": 64.879640945605,
+        "r2": -0.0028033809074319294
+      },
+      "training_median_baseline": {
+        "mae_tl_kg": 51.571200000000005,
+        "rmse_tl_kg": 67.56462135615061,
+        "r2": -0.0875208912119656
+      },
+      "metrics": {
+        "dummy_mean": {
+          "mae_tl_kg": 51.67554149999998,
+          "rmse_tl_kg": 64.879640945605,
+          "r2": -0.0028033809074319294,
+          "mae_improvement_over_training_median_baseline_pct": -0.20232513495899163
+        },
+        "dummy_median": {
+          "mae_tl_kg": 51.571200000000005,
+          "rmse_tl_kg": 67.56462135615061,
+          "r2": -0.0875208912119656,
+          "mae_improvement_over_training_median_baseline_pct": 0.0
+        },
+        "random_forest_incumbent": {
+          "mae_tl_kg": 49.872297895186556,
+          "rmse_tl_kg": 61.223635943775854,
+          "r2": 0.10702942214335909,
+          "mae_improvement_over_training_median_baseline_pct": 3.294284610040965
+        },
+        "random_forest_log_target": {
+          "mae_tl_kg": 49.460673146782234,
+          "rmse_tl_kg": 61.1960979044439,
+          "r2": 0.10783254754249083,
+          "mae_improvement_over_training_median_baseline_pct": 4.092452479713038
+        },
+        "extra_trees": {
+          "mae_tl_kg": 51.09261811428576,
+          "rmse_tl_kg": 63.119823941813586,
+          "r2": 0.050859573333722374,
+          "mae_improvement_over_training_median_baseline_pct": 0.9280022293726709
+        },
+        "hist_gradient_boosting": {
+          "mae_tl_kg": 50.551493132943435,
+          "rmse_tl_kg": 62.36212983003591,
+          "r2": 0.07350988062441743,
+          "mae_improvement_over_training_median_baseline_pct": 1.9772796969172113
+        },
+        "gradient_boosting_huber": {
+          "mae_tl_kg": 47.90118513338202,
+          "rmse_tl_kg": 60.8500460506696,
+          "r2": 0.11789408055541772,
+          "mae_improvement_over_training_median_baseline_pct": 7.116403858389919
+        },
+        "ridge": {
+          "mae_tl_kg": 48.14086811318417,
+          "rmse_tl_kg": 60.283713662732445,
+          "r2": 0.1342372208968885,
+          "mae_improvement_over_training_median_baseline_pct": 6.6516425578924565
+        },
+        "huber_regressor": {
+          "mae_tl_kg": 47.79929795357812,
+          "rmse_tl_kg": 61.33173652683143,
+          "r2": 0.10387326001301489,
+          "mae_improvement_over_training_median_baseline_pct": 7.313969902623718
+        },
+        "engineered_gradient_boosting_huber": {
+          "mae_tl_kg": 48.81401396079482,
+          "rmse_tl_kg": 61.126870318943,
+          "r2": 0.10984992010356898,
+          "mae_improvement_over_training_median_baseline_pct": 5.346367816155507
+        },
+        "predicted_cost_over_predicted_yield_rf": {
+          "mae_tl_kg": 53.540941574784625,
+          "rmse_tl_kg": 67.06569975486296,
+          "r2": -0.07151889721433213,
+          "mae_improvement_over_training_median_baseline_pct": -3.8194604251687414
+        },
+        "hybrid_known_cost_plus_residual_over_predicted_yield": {
+          "mae_tl_kg": 52.450852160731976,
+          "rmse_tl_kg": 65.81450645650744,
+          "r2": -0.03191083304335618,
+          "mae_improvement_over_training_median_baseline_pct": -1.7057042704687442
+        }
+      }
+    },
+    "production_artifact": {
+      "available": true,
+      "file": "models/ekp_model.joblib",
+      "test_metrics": {
+        "mae_tl_kg": 49.87229789518654,
+        "rmse_tl_kg": 61.22363594377584,
+        "r2": 0.10702942214335953
+      },
+      "sha256": "aae0a3538e0c57dff7fc12bc8d20961f4802644b2f4a4cde40eb49d375e9b802",
+      "feature_contract_matches": true
+    },
+    "previous_candidate": {
+      "available": true,
+      "file": "models/candidates/ekp_best_candidate.joblib",
+      "data_type": "synthetic",
+      "production_ready": false,
+      "test_metrics": {
+        "mae_tl_kg": 49.685047642356366,
+        "rmse_tl_kg": 61.444833673870505,
+        "r2": 0.10056525574879205
+      },
+      "note": "Previously selected using this same holdout; exploratory only."
+    },
+    "new_research_candidate": {
+      "saved": true,
+      "file": "models/candidates/ekp_gradient_boosting_huber_engineered_20261024.joblib",
+      "production_ready": false,
+      "created_this_run": false,
+      "training_records": 800,
+      "holdout_metrics_exploratory": {
+        "mae_tl_kg": 48.81401396079482,
+        "rmse_tl_kg": 61.126870318943,
+        "r2": 0.10984992010356898
+      }
+    },
+    "production_artifact_group_errors": {
+      "Bolge": {
+        "Akdeniz": {
+          "n": 32,
+          "mae_tl_kg": 57.6262780524311,
+          "small_group_descriptive_only": false
+        },
+        "Doğu Anadolu": {
+          "n": 25,
+          "mae_tl_kg": 55.72993031568754,
+          "small_group_descriptive_only": false
+        },
+        "Ege": {
+          "n": 24,
+          "mae_tl_kg": 48.105103955584845,
+          "small_group_descriptive_only": false
+        },
+        "Güneydoğu Anadolu": {
+          "n": 25,
+          "mae_tl_kg": 52.221693161575004,
+          "small_group_descriptive_only": false
+        },
+        "Karadeniz": {
+          "n": 32,
+          "mae_tl_kg": 50.552562767857296,
+          "small_group_descriptive_only": false
+        },
+        "Marmara": {
+          "n": 27,
+          "mae_tl_kg": 40.333905543263256,
+          "small_group_descriptive_only": false
+        },
+        "İç Anadolu": {
+          "n": 35,
+          "mae_tl_kg": 44.86880403583928,
+          "small_group_descriptive_only": false
+        }
+      },
+      "Recete_profili": {
+        "ERZURUM_CI": {
+          "n": 94,
+          "mae_tl_kg": 52.73122902098495,
+          "small_group_descriptive_only": false
+        },
+        "MEB_STANDART": {
+          "n": 106,
+          "mae_tl_kg": 47.337019349667266,
+          "small_group_descriptive_only": false
+        }
+      },
+      "Isleme_modeli": {
+        "Fason": {
+          "n": 67,
+          "mae_tl_kg": 52.30121390074979,
+          "small_group_descriptive_only": false
+        },
+        "Kurum içi": {
+          "n": 133,
+          "mae_tl_kg": 48.648708629226135,
+          "small_group_descriptive_only": false
+        }
+      }
+    },
+    "cv_mae_ranked_candidates": [
+      "engineered_gradient_boosting_huber",
+      "gradient_boosting_huber",
+      "huber_regressor",
+      "random_forest_log_target",
+      "random_forest_incumbent",
+      "ridge",
+      "hist_gradient_boosting",
+      "extra_trees",
+      "hybrid_known_cost_plus_residual_over_predicted_yield",
+      "predicted_cost_over_predicted_yield_rf"
+    ],
+    "cv_leader": "engineered_gradient_boosting_huber"
+  },
+  "architectures": {
+    "direct_EKP": "Compared baselines, RF, log-target RF, ExtraTrees, HistGradientBoosting, Huber GradientBoosting, Ridge and HuberRegressor.",
+    "component_cost_over_yield": "Cost and net yield fit separately on each training fold, then predicted cost divided by predicted yield.",
+    "hybrid": "Verified planned material and conditional fason subtotal + predicted remaining cost, divided by separately predicted yield. Salt/other, in-house cost, packaging and overhead lack a verified pre-production formula."
+  },
+  "decision": {
+    "production_model_changed": false,
+    "candidate_artifact_saved": true,
+    "ekp_production_ready": false,
+    "reason": "Synthetic-only data, weak Scenario A evidence, and no untouched real/time-based validation. The production artifact remains unchanged."
+  },
+  "limitations": [
+    "Synthetic model metrics are not factory performance.",
+    "The fixed holdout has been used in previous experiments.",
+    "CV estimates one simulated population; no verified production group/time identifier exists.",
+    "Hashes establish file integrity only, not trusted origin or scientific validity.",
+    "External cost-share benchmark is aggregated and not batch-level EKP training data."
+  ]
+}
