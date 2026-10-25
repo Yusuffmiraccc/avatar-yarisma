@@ -48,6 +48,7 @@ def main() -> int:
     cust = [post("/customers", {"code": f"MKT-{k}", "name": f"Market {k}", "type": "MARKET",
                                 "phone": f"+90 212 000 00 1{i}", "email": f"market{k.lower()}@example.test"})
             for i, k in enumerate("ABC")]
+    post("/customers", {"code": "GENEL", "name": "Genel Müşteri", "type": "RETAIL"})  # perakende satışlar için
     et, bah, bag = product("ET", "Dana Eti", "RAW_MATERIAL"), product("BAHARAT", "Baharat", "RAW_MATERIAL"), product("BAGIRSAK", "Bağırsak", "RAW_MATERIAL")
     sucuk = product("SUCUK", "Narin Sucuk 1 kg", "FINISHED_GOOD", "PACK")
     post(f"/products/{sucuk['id']}/prices", {"price_type": "SALE", "amount": "24.00", "unit_code": "PACK"})
