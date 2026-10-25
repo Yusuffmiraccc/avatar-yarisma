@@ -34,3 +34,14 @@ def test_ledger_integrity_detects_tampering_and_scan_raises_alert(client, auth):
     assert [a["alert_type"] for a in created] == ["LEDGER_BALANCE_MISMATCH"]
     assert client.post("/api/v1/alerts/scan", headers=h).json() == []  # tekrar üretmez
     assert client.post("/api/v1/alerts/scan", headers=auth("VIEWER")).status_code == 403
+
+
+def test_scan_with_history_raises_only_explained_multivariate_alerts_without_costs(client, auth):
+    h = auth("ADMIN")
+    assert client.post("/api/v1/ai/synthetic-data", headers=h, json={}).status_code == 200
+    client.post("/api/v1/alerts/scan", headers=h)
+    items = client.get("/api/v1/alerts", headers=h, params={"alert_type": "MULTIVARIATE_ANOMALY"}).json()["items"]
+    assert items, "synthetic history of 120+150 orders should yield at least one multivariate alert"
+    for a in items:
+        assert a["severity"] == "INFO" and a["details"]["model"] == "ISOLATION_FOREST"
+        assert "ekp" not in a["details"] and "ekp" not in a["message"].lower()

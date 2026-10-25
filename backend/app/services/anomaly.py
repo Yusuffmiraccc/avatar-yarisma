@@ -11,6 +11,8 @@ from decimal import Decimal
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.ml import anomaly_model
+from app.ml.service import butchering_frame, production_frame
 from app.models import (
     AnomalyAlert,
     ButcheringOrder,
@@ -62,6 +64,30 @@ def _z(values: list[float], x: float) -> float | None:
     return (x - statistics.mean(values)) / sd if sd > 0 else None
 
 
+def _multivariate(db: Session, created: list, z_flagged: set[tuple[str, int]]) -> None:
+    """IsolationForest: tek tek normal görünen ama birlikte olağandışı kayıtlar (z-skoru yakalamadıklarını)."""
+    pdf = production_frame(db)
+    if len(pdf):
+        mask, score = anomaly_model.isolation_outliers(pdf[["yield_ratio", "ekp"]].to_numpy())
+        for oid, hit, s, y in zip(pdf["order_id"], mask, score, pdf["yield_ratio"], strict=True):
+            if hit and ("production_order", int(oid)) not in z_flagged:
+                code = db.get(ProductionOrder, int(oid)).order_code
+                _raise(db, created, "MULTIVARIATE_ANOMALY", "INFO", "production_order", int(oid),
+                       f"{code}: verim ve maliyet birlikte olağandışı (anomali skoru {s:.2f}).",
+                       {"anomaly_score": float(s), "yield_ratio": float(y), "model": "ISOLATION_FOREST"})
+    bdf, targets = butchering_frame(db)
+    if len(bdf):
+        cols = [f"r_{t}" for t in targets]
+        for animal, g in bdf.groupby("animal_type"):
+            mask, score = anomaly_model.isolation_outliers(g[cols].to_numpy())
+            for oid, hit, s in zip(g["order_id"], mask, score, strict=True):
+                if hit and ("butchering_order", int(oid)) not in z_flagged:
+                    code = db.get(ButcheringOrder, int(oid)).order_code
+                    _raise(db, created, "MULTIVARIATE_ANOMALY", "INFO", "butchering_order", int(oid),
+                           f"{code}: {animal} parça oranları alışılmışın dışında (anomali skoru {s:.2f}).",
+                           {"anomaly_score": float(s), "model": "ISOLATION_FOREST"})
+
+
 def scan(db: Session) -> list[AnomalyAlert]:
     created: list[AnomalyAlert] = []
     for m in ledger_mismatches(db):
@@ -81,15 +107,18 @@ def scan(db: Session) -> list[AnomalyAlert]:
                 LotGenealogyEdge.process_type == "PRODUCTION", LotGenealogyEdge.process_id == o.id)) == 0 and not o.is_demo:
             _raise(db, created, "MISSING_GENEALOGY", "CRITICAL", "production_order", o.id,
                    f"{o.order_code}: tamamlanmış emirde lot genealogy kaydı yok.", {"order_code": o.order_code})
+    z_flagged: set[tuple[str, int]] = set()
     for oid, y in yields.items():
         z = _z(list(yields.values()), y)
         if z is not None and z < -Z:
+            z_flagged.add(("production_order", oid))
             o = next(x for x in orders if x.id == oid)
             _raise(db, created, "LOW_PRODUCTION_YIELD", "WARNING", "production_order", oid,
                    f"{o.order_code}: verim {y:.3f}, ortalamanın {abs(z):.1f} σ altında.", {"yield_ratio": y, "z": z})
     for oid, e in ekps.items():
         z = _z(list(ekps.values()), e)
         if z is not None and z > Z:
+            z_flagged.add(("production_order", oid))
             o = next(x for x in orders if x.id == oid)
             _raise(db, created, "COST_INCREASE", "WARNING", "production_order", oid,
                    f"{o.order_code}: EKP {e:.4f}, ortalamanın {z:.1f} σ üzerinde.", {"ekp": e, "z": z})
@@ -104,9 +133,12 @@ def scan(db: Session) -> list[AnomalyAlert]:
         for o, r in rows:
             z = _z(vals, r)
             if z is not None and z > Z:
+                z_flagged.add(("butchering_order", o.id))
                 _raise(db, created, "UNEXPECTED_WASTE", "WARNING", "butchering_order", o.id,
                        f"{o.order_code}: fire oranı {r:.3f}, {animal} ortalamasının {z:.1f} σ üzerinde.",
                        {"waste_ratio": r, "z": z})
+
+    _multivariate(db, created, z_flagged)
 
     soon = date.today() + timedelta(days=7)
     for lot, bal in db.execute(select(Lot, InventoryBalance).join(InventoryBalance, InventoryBalance.lot_id == Lot.id)
