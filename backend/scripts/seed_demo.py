@@ -48,9 +48,19 @@ def main() -> int:
     cust = [post("/customers", {"code": f"MKT-{k}", "name": f"Market {k}", "type": "MARKET",
                                 "phone": f"+90 212 000 00 1{i}", "email": f"market{k.lower()}@example.test"})
             for i, k in enumerate("ABC")]
+    post("/customers", {"code": "GENEL", "name": "Genel Müşteri", "type": "RETAIL"})  # perakende satışlar için
     et, bah, bag = product("ET", "Dana Eti", "RAW_MATERIAL"), product("BAHARAT", "Baharat", "RAW_MATERIAL"), product("BAGIRSAK", "Bağırsak", "RAW_MATERIAL")
     sucuk = product("SUCUK", "Narin Sucuk 1 kg", "FINISHED_GOOD", "PACK")
     post(f"/products/{sucuk['id']}/prices", {"price_type": "SALE", "amount": "24.00", "unit_code": "PACK"})
+    kuzu = product("KUZU-CANLI", "Bütün Kuzu", "RAW_MATERIAL")
+    cuts = {k: product(f"KUZU-{k}", f"Kuzu {n}", "FINISHED_GOOD") for k, n in (("BUT", "But"), ("SIRT", "Sırt"), ("OMUZ", "Omuz"))}
+
+    # --- AI: sentetik geçmiş + eğitim. Referans emirlerden ÖNCE: bu emirler eğitimde yok, tahminler gerçekleşmeden üretilir ---
+    print(post("/ai/synthetic-data", {}))
+    models = post("/ai/models/train")
+    for k, v in models.items():
+        cv = v["metrics"]["cross_validation"]
+        print(k, v["model_name"], "n=", v["n_samples"], "iyileşme % (baseline'a göre):", cv["improvement_over_baseline_percent"])
 
     # --- Görev 1 + 3: dış hizmetle üretim ve lot izlenebilirliği ---
     lots = {}
@@ -63,6 +73,7 @@ def main() -> int:
         post(f"/production-orders/{o['id']}/inputs", {"lot_id": lots[key]["id"], "quantity": q, "unit_code": "KG"})
     post(f"/production-orders/{o['id']}/service-costs", {"description": "Dış üretim hizmeti", "quantity": "85", "unit_price": "5.50"})
     post(f"/production-orders/{o['id']}/start")
+    post("/ai/production-yield/predict", {"production_order_id": o["id"]})  # tamamlanmadan önce tahmin; sapma sonradan görünür
     post(f"/production-orders/{o['id']}/complete", {"outputs": [{"product_id": sucuk["id"], "lot_code": "SUC-2026-045",
                                                                   "quantity": "85", "unit_code": "PACK"}]})
     suc = c.get("/api/v1/lots/by-code/SUC-2026-045", headers=h).json()
@@ -74,8 +85,6 @@ def main() -> int:
                       "reason_text": "ET-2026-001 hammadde partisinde kalite sorunu (DEMO)", "lot_codes": ["ET-2026-001"]})
 
     # --- Görev 2: bütün kuzu parçalama (kaynak tutarsızlığı bilerek korunur) ---
-    kuzu = product("KUZU-CANLI", "Bütün Kuzu", "RAW_MATERIAL")
-    cuts = {k: product(f"KUZU-{k}", f"Kuzu {n}", "FINISHED_GOOD") for k, n in (("BUT", "But"), ("SIRT", "Sırt"), ("OMUZ", "Omuz"))}
     post("/butchering-recipes/KUZU", {"lines": [
         {"product_id": cuts["BUT"]["id"], "output_type": "CUT", "expected_ratio": "0.4"},
         {"product_id": cuts["SIRT"]["id"], "output_type": "CUT", "expected_ratio": "0.3"},
@@ -87,17 +96,12 @@ def main() -> int:
                                     "notes": "PDF örneği: 25 kg × 11,50 = 287,50 ≠ 351,00; parça toplamı 22 kg (DEMO)"})
     post(f"/butchering-orders/{b['id']}/inputs", {"lot_id": lamb["id"], "quantity": "25"})
     post(f"/butchering-orders/{b['id']}/start")
+    post("/ai/butchering-output/predict", {"butchering_order_id": b["id"]})
     post(f"/butchering-orders/{b['id']}/complete", {"variance_reason": "Kaynak belgede 3 kg fark açıklanmamış; kayıp olarak işlendi",
          "outputs": [{"product_id": cuts["BUT"]["id"], "lot_code": "KUZU-BUT-2026-001", "actual_weight": "12"},
                      {"product_id": cuts["SIRT"]["id"], "lot_code": "KUZU-SIRT-2026-001", "actual_weight": "6"},
                      {"product_id": cuts["OMUZ"]["id"], "lot_code": "KUZU-OMUZ-2026-001", "actual_weight": "4"}]})
 
-    # --- AI: sentetik geçmiş + eğitim ---
-    print(post("/ai/synthetic-data", {}))
-    models = post("/ai/models/train")
-    for k, v in models.items():
-        cv = v["metrics"]["cross_validation"]
-        print(k, v["model_name"], "n=", v["n_samples"], "iyileşme % (baseline'a göre):", cv["improvement_over_baseline_percent"])
     post("/alerts/scan")
     print("Demo verisi hazır. Giriş: admin@avatar.demo")
     return 0

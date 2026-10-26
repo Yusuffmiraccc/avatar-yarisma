@@ -173,3 +173,38 @@ def test_worse_candidate_does_not_replace_active_model(tmp_path, monkeypatch):
     assert kept["version"] == "30" and "candidate_rejected" in kept
     assert service._promote("production_yield", art(40))["version"] == "40"
     assert modeling.load(str(tmp_path / service.KIND_FILE["production_yield"]))["version"] == "40"
+
+
+def test_isolation_outliers_flags_joint_outlier_and_skips_small_samples():
+    import numpy as np
+
+    from app.ml.anomaly_model import isolation_outliers
+
+    x = np.random.default_rng(0).normal(0, 1, (80, 2))
+    x[0] = [4.0, -4.0]
+    mask, score = isolation_outliers(x)
+    assert mask[0] and score[0] == score.max()
+    small, _ = isolation_outliers(x[:10])
+    assert not small.any()
+
+
+def test_interval_coverage_is_reported_for_both_models():
+    import numpy as np
+    import pandas as pd
+
+    from app.ml import modeling
+
+    rng = np.random.default_rng(1)
+    n = 60
+    kg = rng.uniform(60, 200, n)
+    y = 0.8 + rng.normal(0, 0.02, n)
+    df = pd.DataFrame({"total_input_kg": kg, "main_share": 0.93, "other_ratio": 0.07, "cost_per_kg": 10.0,
+                       "month": rng.integers(1, 13, n), "supplier_id": rng.integers(1, 4, n), "yield_ratio": y,
+                       "output_qty": y * kg, "input_cost": kg * 10.0, "service_unit_price": 5.5,
+                       "ekp": kg * 10.0 / (y * kg) + 5.5, "completed_ts": np.arange(n, dtype=float)})
+    art = modeling.train_production(df)
+    assert 0 <= art["metrics"]["temporal_holdout"]["interval_95_coverage_percent"] <= 100
+    bdf = pd.DataFrame({"animal_type": ["KUZU"] * n, "input_weight": rng.uniform(20, 30, n),
+                        "r_BUT": 0.4 + rng.normal(0, 0.01, n), "r_FIRE": 0.1 + rng.normal(0, 0.01, n)})
+    art = modeling.train_butchering(bdf, ["BUT", "FIRE"])
+    assert 0 <= art["metrics"]["cross_validation"]["interval_95_coverage_percent"] <= 100

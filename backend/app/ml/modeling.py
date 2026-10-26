@@ -108,6 +108,7 @@ def train_production(df: pd.DataFrame) -> dict:
                "baseline": {"output_quantity": _metrics(sub["output_qty"], hq(hb)[0]), "ekp": _metrics(sub["ekp"], hq(hb)[1])}}
     final = candidates[best]().fit(X, y)
     sigma = float(np.std(oof[best] - y, ddof=1))
+    holdout["interval_95_coverage_percent"] = round(float((np.abs(hp - y[te]) <= 1.96 * sigma).mean() * 100), 1)
     cv = {"folds": 5, "selected_model": best, "by_model": report,
           "improvement_over_baseline_percent": {
               "output_quantity_mae": _improvement(report["BASELINE_MEAN"]["output_quantity"], report[best]["output_quantity"]),
@@ -187,6 +188,8 @@ def train_butchering(df: pd.DataFrame, targets: list[str]) -> dict:
     mod = report[best]["overall"]
     cv = {"folds": 5, "selected_model": best, "by_model": report,
           "improvement_over_baseline_percent": {"overall_mae_kg": round((1 - mod["mae_kg"] / base["mae_kg"]) * 100, 2)}}
+    half = 1.96 * np.array([sigma[c] for c in cols])
+    cv["interval_95_coverage_percent"] = round(float((np.abs(oof[best] - Y) <= half).mean() * 100), 1)
     return {"kind": "butchering_output", "version": version, "trained_at": now.isoformat(), "n_samples": n, "model": final,
             "targets": targets, "baseline": {"by_animal": base_by_animal, "all": base_all}, "sigma": sigma,
             "model_name": best, "metrics": {"cross_validation": cv}, "limitations": limitations}
