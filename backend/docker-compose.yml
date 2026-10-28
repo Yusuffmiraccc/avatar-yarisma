@@ -1,4 +1,4 @@
-name: avatar
+﻿name: avatar
 
 services:
   mysql:
@@ -34,7 +34,7 @@ services:
     restart: unless-stopped
     environment:
       ENVIRONMENT: ${ENVIRONMENT:-local}
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-change-me-local-only}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-avatar-test-only}
     command:
       - /bin/sh
       - -ec
@@ -62,7 +62,7 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: mysql+pymysql://avatar:${MYSQL_PASSWORD:-change-me-local-only}@mysql:3306/avatar_db?charset=utf8mb4
-      REDIS_URL: redis://:${REDIS_PASSWORD:-change-me-local-only}@redis:6379/0
+      REDIS_URL: redis://:${REDIS_PASSWORD:-avatar-test-only}@redis:6379/0
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-local-dev-secret-change-me-0123456789abcdef}
       ENVIRONMENT: ${ENVIRONMENT:-local}
       ML_DIR: /srv/ml_artifacts
@@ -75,3 +75,5 @@ volumes:
   avatar_mysql_data:
   avatar_redis_data:
   avatar_ml:
+
+
