@@ -26,17 +26,34 @@ from app.services.bootstrap import create_user, seed_reference
 
 PASSWORD = "Test-Pass-123!"
 
-
 @pytest.fixture(scope="session", autouse=True)
 def _database():
     root = sa.create_engine(ROOT_URL, isolation_level="AUTOCOMMIT")
-    with root.connect() as c:
-        c.execute(sa.text(f"CREATE DATABASE IF NOT EXISTS {TEST_DB} CHARACTER SET utf8mb4"))
-    root.dispose()
-    Base.metadata.drop_all(engine)
+    try:
+        with root.connect() as c:
+            c.execute(
+                sa.text(
+                    f"CREATE DATABASE IF NOT EXISTS {TEST_DB} "
+                    "CHARACTER SET utf8mb4"
+                )
+            )
+    finally:
+        root.dispose()
+
+    # Yalnızca avatar_test veritabanının tablolarını sıfırla.
+    with engine.connect() as conn:
+        conn.execute(sa.text("SET FOREIGN_KEY_CHECKS=0"))
+        try:
+            tables = conn.execute(sa.text("SHOW TABLES")).scalars().all()
+            for table in tables:
+                conn.execute(sa.text(f"DROP TABLE IF EXISTS `{table}`"))
+        finally:
+            conn.execute(sa.text("SET FOREIGN_KEY_CHECKS=1"))
+
     Base.metadata.create_all(engine)
     yield
     engine.dispose()
+
 
 
 @pytest.fixture(autouse=True)

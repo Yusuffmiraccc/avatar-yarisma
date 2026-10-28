@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from tests.conftest import PASSWORD
-from tests.helpers import mk_party
+from tests.helpers import mk_party, mk_product, receive
 from tests.test_production import run_reference_order
 
 
@@ -80,6 +80,29 @@ def test_forward_backward_and_recall_end_to_end(client, auth):
                        json={"reason": "yetkisiz deneme"}).status_code == 403
     ok = client.post(f"/api/v1/lots/{ctx['suc']['id']}/unblock", headers=tm, json={"reason": "Laboratuvar sonucu temiz"})
     assert ok.status_code == 200 and ok.json()["is_blocked"] is False
+
+
+def test_unknown_unlinked_lot_and_duplicate_recall_origins(client, auth):
+    h = auth("ADMIN")
+    product = mk_product(client, h, "RAW-ORPHAN", "İlişkisiz hammadde")
+    lot = receive(client, h, "LOT-ORPHAN-001", product, 5, "1.00")
+
+    unknown = client.get("/api/v1/traceability/lots/by-code/LOT-UNKNOWN/forward", headers=h)
+    assert unknown.status_code == 404
+
+    forward = client.get(f"/api/v1/traceability/lots/{lot['id']}/forward", headers=h)
+    assert forward.status_code == 200, forward.text
+    result = forward.json()
+    assert [node["lot_id"] for node in result["lots"]] == [lot["id"]]
+    assert result["shipments"] == [] and result["customers"] == []
+
+    recall = client.post("/api/v1/recalls", headers=h, json={
+        "recall_code": "RCL-ORPHAN-001", "reason_code": "QUALITY",
+        "lot_codes": ["LOT-ORPHAN-001", "LOT-ORPHAN-001"],
+    })
+    assert recall.status_code == 201, recall.text
+    origins = [row for row in recall.json()["lots"] if row["role"] == "ORIGIN"]
+    assert len(origins) == 1 and origins[0]["lot_id"] == lot["id"]
 
 
 def test_recalled_lot_cannot_be_sold_or_shipped(client, auth):
