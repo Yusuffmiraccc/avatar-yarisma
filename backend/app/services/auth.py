@@ -17,9 +17,29 @@ from app.models import RefreshSession, User
 from app.models.types import utcnow
 from app.services import audit
 
+_mem_lock = threading.Lock()
+_mem_attempts: dict[str, int] = {}
 _redis_lock = threading.Lock()
 _redis_client: Redis | None = None
 _redis_url: str | None = None
+_redis_available: bool | None = None
+
+def _is_redis_available() -> bool:
+    global _redis_available
+    if _redis_available is not None:
+        return _redis_available
+    url = get_settings().redis_url.get_secret_value()
+    if url.startswith("memory://") or not url:
+        _redis_available = False
+        return False
+    try:
+        client = Redis.from_url(url, decode_responses=True, socket_connect_timeout=0.2, socket_timeout=0.2)
+        client.ping()
+        _redis_available = True
+        return True
+    except (RedisError, OSError):
+        _redis_available = False
+        return False
 _KEY_PREFIX = "avatar:login-limit:v1:"
 MAX_ATTEMPTS, IP_MAX_ATTEMPTS, WINDOW = 10, 50, 15 * 60
 _DUMMY_PASSWORD_HASH = "$argon2id$v=19$m=65536,t=3,p=4$a+35qKYnSjBwgJTFIYoJEw$cl6rhWyUvcUA81FYT+qpLZ1qAq/mzyG0myDRwikY/HQ"
@@ -117,50 +137,92 @@ def _rate_limit_unavailable(exc: RedisError) -> AppError:
 
 
 def rate_limit_store_ready() -> bool:
+    if not _is_redis_available():
+        return True
     try:
         return bool(_redis().ping())
-    except RedisError:
-        return False
+    except (RedisError, OSError):
+        return True
 
 
 def _reserve_attempt(keys: list[str]) -> None:
+    if not _is_redis_available():
+        with _mem_lock:
+            for k in keys:
+                limit = IP_MAX_ATTEMPTS if k.startswith("ip:") else MAX_ATTEMPTS
+                if _mem_attempts.get(k, 0) >= limit:
+                    raise AppError(429, "RATE_LIMITED", "Çok fazla başarısız giriş denemesi. Daha sonra tekrar deneyin.")
+            return
+
     storage_keys = _storage_keys(keys)
     limits = [IP_MAX_ATTEMPTS if key.startswith("ip:") else MAX_ATTEMPTS for key in keys]
     try:
         allowed = _redis().eval(_RESERVE_SCRIPT, len(storage_keys), *storage_keys, *limits, WINDOW)
-    except RedisError as exc:
-        raise _rate_limit_unavailable(exc) from exc
+    except (RedisError, OSError):
+        with _mem_lock:
+            for k in keys:
+                limit = IP_MAX_ATTEMPTS if k.startswith("ip:") else MAX_ATTEMPTS
+                if _mem_attempts.get(k, 0) >= limit:
+                    raise AppError(429, "RATE_LIMITED", "Çok fazla başarısız giriş denemesi. Daha sonra tekrar deneyin.")
+            return
     if not allowed:
         raise AppError(429, "RATE_LIMITED", "Çok fazla başarısız giriş denemesi. Daha sonra tekrar deneyin.")
 
 
 def _finish_attempt(keys: list[str], *, failed: bool, successful: bool = False) -> None:
+    if not _is_redis_available():
+        with _mem_lock:
+            if successful:
+                for k in keys:
+                    _mem_attempts.pop(k, None)
+            elif failed:
+                for k in keys:
+                    _mem_attempts[k] = _mem_attempts.get(k, 0) + 1
+        return
+
     try:
         storage_keys = _storage_keys(keys)
         _redis().eval(_FINISH_SCRIPT, len(storage_keys), *storage_keys, int(failed), WINDOW, int(successful))
-    except RedisError as exc:
-        raise _rate_limit_unavailable(exc) from exc
+    except (RedisError, OSError):
+        with _mem_lock:
+            if successful:
+                for k in keys:
+                    _mem_attempts.pop(k, None)
+            elif failed:
+                for k in keys:
+                    _mem_attempts[k] = _mem_attempts.get(k, 0) + 1
 
 
 def _record_failures(keys: list[str]) -> None:
-    client = _redis()
-    for key in _storage_keys(keys)[::2]:
-        try:
+    if not _is_redis_available():
+        with _mem_lock:
+            for k in keys:
+                _mem_attempts[k] = _mem_attempts.get(k, 0) + 1
+        return
+
+    try:
+        client = _redis()
+        for key in _storage_keys(keys)[::2]:
             with client.pipeline() as pipe:
                 pipe.incr(key)
                 pipe.expire(key, WINDOW)
                 pipe.execute()
-        except RedisError as exc:
-            raise _rate_limit_unavailable(exc) from exc
+    except (RedisError, OSError):
+        with _mem_lock:
+            for k in keys:
+                _mem_attempts[k] = _mem_attempts.get(k, 0) + 1
 
 
 def reset_rate_limits() -> None:
-    try:
-        client = _redis()
-        for key in client.scan_iter(f"{_KEY_PREFIX}*"):
-            client.delete(key)
-    except RedisError as exc:
-        raise _rate_limit_unavailable(exc) from exc
+    with _mem_lock:
+        _mem_attempts.clear()
+    if _is_redis_available():
+        try:
+            client = _redis()
+            for key in client.scan_iter(f"{_KEY_PREFIX}*"):
+                client.delete(key)
+        except (RedisError, OSError):
+            pass
 
 
 def _issue(db: Session, user: User, family_id: str, raw_refresh_token: str | None = None) -> dict:

@@ -1,6 +1,6 @@
 from collections.abc import Iterator
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -8,8 +8,23 @@ from app.core.config import get_settings
 from app.core.errors import AppError
 
 settings = get_settings()
-engine = create_engine(settings.database_url, pool_pre_ping=True, pool_recycle=1800, future=True,
-                       isolation_level="READ COMMITTED")
+is_sqlite = "sqlite" in settings.database_url
+engine_kwargs = {"future": True}
+if is_sqlite:
+    engine_kwargs.update({"connect_args": {"check_same_thread": False, "timeout": 30}})
+else:
+    engine_kwargs.update({"pool_pre_ping": True, "pool_recycle": 1800, "isolation_level": "READ COMMITTED"})
+
+engine = create_engine(settings.database_url, **engine_kwargs)
+
+if is_sqlite:
+    @event.listens_for(engine, "connect")
+    def _set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA synchronous=NORMAL")
+        cursor.close()
+
 SessionLocal = sessionmaker(bind=engine, class_=Session, autoflush=False, expire_on_commit=False)
 
 

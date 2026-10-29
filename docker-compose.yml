@@ -1,0 +1,89 @@
+name: avatar
+
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-local}
+      MYSQL_DATABASE: avatar_db
+      MYSQL_USER: avatar
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-change-me-local-only}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change-root-local-only}
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        if [ "$$ENVIRONMENT" != "local" ] && { [ -z "$$MYSQL_PASSWORD" ] || [ -z "$$MYSQL_ROOT_PASSWORD" ] || [ "$$MYSQL_PASSWORD" = "change-me-local-only" ] || [ "$$MYSQL_ROOT_PASSWORD" = "change-root-local-only" ]; }; then
+          echo "MySQL default passwords are disabled outside local." >&2
+          exit 1
+        fi
+        exec /usr/local/bin/docker-entrypoint.sh mysqld
+    ports:
+      - "127.0.0.1:3307:3306"
+    volumes:
+      - avatar_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-change-root-local-only}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-local}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-avatar-test-only}
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        if [ "$$ENVIRONMENT" != "local" ] && { [ -z "$$REDIS_PASSWORD" ] || [ "$$REDIS_PASSWORD" = "change-me-local-only" ]; }; then
+          echo "Redis default password is disabled outside local." >&2
+          exit 1
+        fi
+        exec redis-server --requirepass "$$REDIS_PASSWORD" --appendonly yes --maxmemory 128mb --maxmemory-policy noeviction
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" redis-cli ping | grep -qx PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - avatar_redis_data:/data
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: mysql+pymysql://avatar:${MYSQL_PASSWORD:-change-me-local-only}@mysql:3306/avatar_db?charset=utf8mb4
+      REDIS_URL: redis://:${REDIS_PASSWORD:-avatar-test-only}@redis:6379/0
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-local-dev-secret-change-me-0123456789abcdef}
+      ENVIRONMENT: ${ENVIRONMENT:-local}
+      ML_DIR: /srv/ml_artifacts
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - avatar_ml:/srv/ml_artifacts
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "127.0.0.1:5173:80"
+
+volumes:
+  avatar_mysql_data:
+  avatar_redis_data:
+  avatar_ml:
