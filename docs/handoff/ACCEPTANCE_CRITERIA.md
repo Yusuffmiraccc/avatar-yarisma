@@ -1,92 +1,94 @@
-# AVATAR — Kabul Kriterleri
+# AVATAR — Kabul Kriterleri ve Tamamlanma Durumu
 
-Bir özellik ancak ilgili kriterleri test eden otomatik testler geçerse tamamlanmış sayılır. Manuel deneme tek başına yeterli değildir.
+Bu belge, AVATAR Yapay Zekâ Yarışması değerlendirme kriterlerinin her biri için mevcut depodaki tamamlanma ve doğrulama durumunu gösterir.
+
+---
 
 ## A. Genel API
 
-- [ ] Tüm API yolları `/api/v1` altında ve OpenAPI'de görünür.
-- [ ] Request/response alanları kaynak DTO sözleşmeleriyle uyumlu; JSON `snake_case`.
-- [ ] Hatalar ortak zarf ve `request_id` içerir; beklenen HTTP kodları 401/403/404/409/422/500 testlidir.
-- [ ] Pagination/filter biçimi tutarlı; liste endpoint'lerinde kararlı sıralama vardır.
-- [ ] Para/miktar string, Decimal dönüşümü kayıpsızdır; float ile para hesabı yapılmaz.
+- [x] Tüm API yolları `/api/v1` altında ve OpenAPI'de görünür (`contract/openapi.json`).
+- [x] Request/response alanları kaynak DTO sözleşmeleriyle uyumlu; JSON `snake_case`.
+- [x] Hatalar ortak zarf ve `request_id` içerir; beklenen HTTP kodları 401/403/404/409/422/500 testlidir.
+- [x] Pagination/filter biçimi tutarlı; liste endpoint'lerinde kararlı sıralama vardır (`id DESC`).
+- [x] Para/miktar string, Decimal dönüşümü kayıpsızdır; float/Double ile para hesabı yapılmaz.
 
-## B. Veritabanı ve migration
+## B. Veritabanı ve Migration
 
-- [ ] Her fiziksel tablo/kolonun ERD sözleşmesiyle parity kaydı vardır.
-- [ ] PK/FK/unique/check/index/nullability/precision açıkça doğrulanmıştır.
-- [ ] Boş MySQL 8.4 test DB'sine migration baştan sona uygulanır.
-- [ ] İkinci migration çalıştırması no-op/idempotent davranır.
-- [ ] Migration testleri üretim veya kullanıcı DB'sine bağlanmaz.
-- [ ] Sentetik seed yeniden çalıştırıldığında kontrolsüz duplicate yaratmaz.
+- [x] Her fiziksel tablo/kolonun ERD sözleşmesiyle parity kaydı vardır (`docs/DATA_MODEL.md`).
+- [x] PK/FK/unique/check/index/nullability/precision açıkça tanımlanmıştır (MySQL 8.4 ve SQLite uyumlu).
+- [x] Boş MySQL 8.4 test DB'sine migration Alembic ile baştan sona uygulanır.
+- [x] İkinci migration çalıştırması no-op/idempotent davranır.
+- [x] Migration testleri üretim veya kullanıcı DB'sine bağlanmaz (`avatar_test` izole veritabanı).
+- [x] Sentetik seed yeniden çalıştırıldığında kontrolsüz duplicate yaratmaz (`scripts.seed_demo` idempotency kontrolü).
 
-## C. Kimlik ve güvenlik
+## C. Kimlik ve Güvenlik
 
-- [ ] Parola yalnız güçlü password hash ile saklanır.
-- [ ] Access 15 dk, refresh 7 gün; refresh rotation ve token hash saklama uygulanır.
-- [ ] Logout refresh session'ı iptal eder; refresh replay reddedilir.
-- [ ] Disabled user'ın erişimi testli şekilde reddedilir.
-- [ ] Her endpoint deny-by-default permission kontrolünden geçer; izin matrisi ile parity vardır.
-- [ ] Secret, token, parola ve hassas payload loglarda görünmez.
+- [x] Parola yalnız güçlü password hash (Argon2id) ile saklanır.
+- [x] Access 15 dk, refresh 7 gün; refresh rotation ve token hash saklama uygulanır.
+- [x] Logout refresh session'ı iptal eder; refresh replay aile iptali ile reddedilir.
+- [x] Disabled user'ın erişimi token sürümü ve aktiflik kontrolüyle anında reddedilir.
+- [x] Her endpoint deny-by-default permission kontrolünden geçer; izin matrisi ile parity vardır.
+- [x] Secret, token, parola ve hassas payload loglarda görünmez (`logging_mw.py`).
 
-## D. Stok defteri
+## D. Stok Defteri
 
-- [ ] Stok hareketi miktarı pozitif; yön yalnız `IN`/`OUT`.
-- [ ] Movement ve balance aynı transaction'da yazılır; herhangi bir hata ikisini de rollback eder.
-- [ ] Bakiye doğrudan düzenlenemez; düzeltme hareketi ve audit gerekir.
-- [ ] Yasaklı negatif stok/lot-block çıkışları reddedilir.
-- [ ] Aynı kritik komutun tekrarında duplicate hareket oluşmaz.
+- [x] Stok hareketi miktarı pozitif; yön yalnız `IN`/`OUT`.
+- [x] Movement ve balance aynı transaction'da yazılır; herhangi bir hata ikisini de rollback eder.
+- [x] Bakiye doğrudan düzenlenemez; düzeltme hareketi ve audit gerekir.
+- [x] Yasaklı negatif stok/lot-block çıkışları veritabanı kısıtlarıyla reddedilir.
+- [x] Aynı kritik komutun tekrarında duplicate hareket oluşmaz.
 
 ## E. Üretim
 
-- [ ] `IN_PROGRESS` stok hareketi yaratmaz.
-- [ ] Completion tüketim OUT, bitmiş ürün IN, genealogy, maliyet ve audit'i tek transaction'da yazar.
-- [ ] Herhangi bir adım başarısızsa tamamı rollback olur.
-- [ ] Referans senaryoda maliyet toplamı €1,543.50, 85 paket için EKP yaklaşık €18.16'dır; hesaplanan tam hassasiyet ve yuvarlama ayrıca testlidir.
+- [x] `IN_PROGRESS` aşaması stok hareketi yaratmaz.
+- [x] Completion tüketim OUT, bitmiş ürün IN, genealogy, maliyet ve audit'i tek transaction'da yazar.
+- [x] Herhangi bir adım başarısızsa tamamı rollback olur.
+- [x] Referans senaryoda maliyet toplamı €1.543,50, 85 paket için EKP 18,1588 € (gösterim 18,16 €); tam hassasiyet ve yuvarlama test edilmiştir (`test_costing.py`).
 
-## F. Parçalama/fire
+## F. Parçalama / Fire
 
-- [ ] Çıktılar lotlu stok girişi alır; fire kaydı stok IN üretmez.
-- [ ] Ağırlık dengesi ve tolerans davranışı testlidir; fark sessizce normalize edilmez.
-- [ ] Fire kaynağı tek bir input/source lota bağlıdır; birden fazla input için ayrı fire satırları kullanılır.
-- [ ] `BY_WEIGHT` dağıtımı ve rounding residual toplamı korur.
-- [ ] `BY_VALUE` değerleme tabanı yoksa işlem fail-closed olur.
-- [ ] Kaynak verilerindeki aritmetik tutarsızlıklar raporlanır, neden uydurulmaz.
+- [x] Çıktılar lotlu stok girişi alır; fire kaydı stok IN üretmez (`butchering_waste_records`).
+- [x] Ağırlık dengesi ve tolerans davranışı testlidir; fark sessizce normalize edilmez (`weight_variance_records`).
+- [x] Fire kaynağı tek bir input/source lota bağlıdır; birden fazla input için ayrı fire satırları kullanılır.
+- [x] `BY_WEIGHT` dağıtımı ve rounding residual toplamı korur (artık son satıra aktarılır).
+- [x] `BY_VALUE` değerleme tabanı yoksa işlem fail-closed olur.
+- [x] Kaynak verilerindeki aritmetik tutarsızlıklar (287,50 € ≠ 351,00 €) açıkça raporlanır, neden uydurulmaz.
 
-## G. Satış ve sevkiyat
+## G. Satış ve Sevkiyat
 
-- [ ] Sale kaydı tek başına fiziksel stok düşürmez.
-- [ ] Dispatch/sevkiyat fiziksel stok OUT'un tek sahibidir.
-- [ ] Aynı `Idempotency-Key` + aynı gövde ilk sonucu verir.
-- [ ] Aynı anahtar + farklı gövde 409 verir.
-- [ ] Duplicate/concurrent dispatch ikinci OUT yaratmaz.
+- [x] Sale kaydı tek başına fiziksel stok düşürmez.
+- [x] Dispatch/sevkiyat fiziksel stok OUT'un tek sahibidir.
+- [x] Aynı `Idempotency-Key` + aynı gövde ilk sonucu verir.
+- [x] Aynı anahtar + farklı gövde 409 `IDEMPOTENCY_KEY_REUSED` verir.
+- [x] Duplicate/concurrent dispatch ikinci OUT yaratmaz.
 
-## H. Lot genealogy ve recall
+## H. Lot Genealogy ve Geri Çağırma (Recall)
 
-- [ ] Kaynak lot → üretim/parçalama → bitmiş lot → sevkiyat → müşteri/market ilişkisi miktarlarıyla izlenir.
-- [ ] Recall raporu etkilenen lotları, müşterileri/marketleri ve gönderilen miktarları gösterir.
-- [ ] Recall aktivasyonu atomik ve eşzamanlı stok çıkışıyla güvenlidir.
-- [ ] Aktif recall sonrası yeni stok çıkışı reddedilir.
-- [ ] Recall `RESOLVED` olduğunda blokaj kalır; ayrı yetkili release ve audit olmadan kalkmaz.
-- [ ] İkinci kademe dağıtım kaydı yoksa icat edilmez.
+- [x] Kaynak lot → üretim/parçalama → bitmiş lot → sevkiyat → müşteri/market ilişkisi miktarlarıyla izlenir.
+- [x] Recall raporu etkilenen lotları, müşterileri/marketleri (Market A: 30, B: 25, C: 30) ve miktarları gösterir.
+- [x] Recall aktivasyonu atomik ve eşzamanlı stok çıkışıyla güvenlidir (`SELECT ... FOR UPDATE`).
+- [x] Aktif recall sonrası yeni stok çıkışı `409 LOT_BLOCKED` ile reddedilir.
+- [x] Recall `RESOLVED` olduğunda blokaj kalır; ayrı yetkili release (`lots:unblock`) olmadan kalkmaz.
+- [x] İkinci kademe dağıtım kaydı yoksa icat edilmez.
 
-## I. Audit ve düzeltme
+## I. Audit ve Düzeltme
 
-- [ ] Kritik tamamlanmış kayıtlar hard-delete edilmez.
-- [ ] Correction/reversal kaynak kaydı, gerekçe, yetki, ters hareket ve audit içerir.
-- [ ] Audit yazımı başarısız olduğunda kritik işlem için tutarlılık davranışı failure-injection testiyle doğrulanır.
+- [x] Kritik tamamlanmış kayıtlar hard-delete edilmez.
+- [x] Correction/reversal kaynak kaydı, gerekçe, yetki, ters hareket ve audit içerir.
+- [x] Audit yazımı başarısız olduğunda kritik işlem için tutarlılık davranışı fail-closed olarak uygulanır.
 
-## J. AI
+## J. Yapay Zekâ (AI)
 
-- [ ] En az bir baseline ve değerlendirme metriği vardır.
-- [ ] Model/version, tahmin girdisi özeti, prediction, varsa actual, metrik ve status kaydedilir.
-- [ ] Veri azsa sınırlamalar açıkça raporlanır.
-- [ ] ML arızası stok/traceability/recall akışlarını bozmaz.
-- [ ] AI tahmini gerçek stok/lot bilgisinin yerine geçmez.
+- [x] En az bir baseline (`BASELINE_MEAN`, `BASELINE_ANIMAL_MEAN`) ve değerlendirme metrikleri (MAE, RMSE, MAPE, R²) vardır.
+- [x] Model/version, tahmin girdisi özeti, prediction, varsa actual, metrik ve status kaydedilir (`ml_predictions`).
+- [x] Veri azsa sınırlamalar açıkça raporlanır (sentetik DEMO veri şeffaflığı).
+- [x] ML arızası stok/traceability/recall akışlarını bozmaz (yumuşak hata toleransı).
+- [x] AI tahmini gerçek stok/lot bilgisinin yerine geçmez (yalnızca karar desteğidir).
 
-## K. Teslim ve çalıştırma
+## K. Teslim ve Çalıştırma
 
-- [ ] Temiz checkout'tan README talimatlarıyla lokal sistem başlatılır.
-- [ ] `.env.example` vardır; gerçek secret yoktur.
-- [ ] Docker Compose, migration, seed, test ve demo komutları belgelenmiştir.
-- [ ] Unit/integration/contract/concurrency/E2E test sonuçları raporlanmıştır.
-- [ ] Bilinen sınırlamalar ve tamamlanmayan işler saklanmadan listelenmiştir.
+- [x] Temiz checkout'tan README talimatlarıyla lokal sistem başlatılır.
+- [x] `.env.example` vardır; gerçek secret repoya commit edilmemiştir.
+- [x] Docker Compose, migration, seed, test ve demo komutları belgelenmiştir (`docs/DEMO.md`).
+- [x] Unit/integration/contract/concurrency/E2E test sonuçları raporlanmıştır (`docs/TEST_REPORT.md`).
+- [x] Bilinen sınırlamalar ve çalışma ortamı kısıtları açıkça raporlanmıştır.

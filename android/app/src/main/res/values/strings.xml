@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">AVATAR Satış &amp; Operasyon</string>
+    <string name="login_title">AVATAR Giriş</string>
+    <string name="email_hint">E-posta</string>
+    <string name="password_hint">Parola</string>
+    <string name="login_button">Giriş Yap</string>
+    <string name="sync_status_online">Çevrimiçi</string>
+    <string name="sync_status_offline">Çevrimdışı (Önbellek)</string>
+    <string name="sync_now">Şimdi Senkronla</string>
+    <string name="catalog_tab_sellable">Satılabilir Lotlar</string>
+    <string name="catalog_tab_blocked">Bloke / Geri Çağrılan</string>
+    <string name="new_sale_title">Yeni Satış</string>
+    <string name="select_customer">Market / Müşteri Seç</string>
+    <string name="select_lot">Lot Seç</string>
+    <string name="quantity">Miktar</string>
+    <string name="unit_price">Birim Fiyat (Sabit)</string>
+    <string name="total_amount">Toplam Tutar</string>
+    <string name="complete_sale">Satışı Tamamla</string>
+    <string name="sales_history_title">Satış Geçmişi</string>
+    <string name="settings_title">Ayarlar</string>
+</resources>
