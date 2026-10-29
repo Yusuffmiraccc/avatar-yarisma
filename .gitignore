@@ -67,3 +67,14 @@ Desktop.ini
 # ML artifacts
 ml_artifacts/
 backend/ml_artifacts/
+
+# Temporary backup and database files
+*.bak
+*.db
+*.sqlite
+*.sqlite3
+
+# Build artifacts and mobile binaries (distributed via GitHub Releases)
+artifacts/
+*.apk
+*.aab

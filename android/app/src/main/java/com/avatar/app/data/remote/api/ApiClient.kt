@@ -53,9 +53,29 @@ class TokenManager(context: Context) {
 
 class ApiClient(
     private val context: Context,
-    baseUrl: String = "http://10.0.2.2:8000/api/v1/"
+    initialBaseUrl: String = "http://10.0.2.2:8000/api/v1/"
 ) {
     val tokenManager = TokenManager(context)
+    private val serverPrefs = context.getSharedPreferences("avatar_server_config", Context.MODE_PRIVATE)
+
+    var baseUrl: String = serverPrefs.getString("base_url", initialBaseUrl) ?: initialBaseUrl
+        private set
+
+    fun updateBaseUrl(newUrl: String) {
+        var normalized = newUrl.trim()
+        if (!normalized.startsWith("http://") && !normalized.startsWith("https://")) {
+            normalized = "http://$normalized"
+        }
+        if (!normalized.endsWith("/")) {
+            normalized = "$normalized/"
+        }
+        if (!normalized.endsWith("api/v1/")) {
+            normalized = if (normalized.endsWith("/api/v1")) "$normalized/" else "${normalized}api/v1/"
+        }
+        baseUrl = normalized
+        serverPrefs.edit().putString("base_url", normalized).apply()
+        rebuildRetrofit()
+    }
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -118,19 +138,10 @@ class ApiClient(
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
 
-    // Standalone retrofit for unauthenticated refresh calls
-    private val rawAuthRetrofit = Retrofit.Builder()
-        .baseUrl(baseUrl)
-        .client(rawClient)
-        .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
-        .build()
-
     private interface RawAuthService {
         @retrofit2.http.POST("auth/refresh")
         fun refresh(@retrofit2.http.Body request: RefreshRequest): retrofit2.Call<TokenResponse>
     }
-
-    private val rawAuthApi = rawAuthRetrofit.create(RawAuthService::class.java)
 
     private val logging = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BASIC
@@ -144,13 +155,36 @@ class ApiClient(
         .authenticator(tokenAuthenticator)
         .build()
 
-    private val retrofit = Retrofit.Builder()
-        .baseUrl(baseUrl)
-        .client(okHttpClient)
-        .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
-        .build()
+    private lateinit var rawAuthApi: RawAuthService
 
-    val authApi: AuthApi = retrofit.create(AuthApi::class.java)
-    val catalogApi: CatalogApi = retrofit.create(CatalogApi::class.java)
-    val saleApi: SaleApi = retrofit.create(SaleApi::class.java)
+    lateinit var authApi: AuthApi
+        private set
+
+    lateinit var catalogApi: CatalogApi
+        private set
+
+    lateinit var saleApi: SaleApi
+        private set
+
+    init {
+        rebuildRetrofit()
+    }
+
+    private fun rebuildRetrofit() {
+        val rawAuthRetrofit = Retrofit.Builder()
+            .baseUrl(baseUrl)
+            .client(rawClient)
+            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+            .build()
+        rawAuthApi = rawAuthRetrofit.create(RawAuthService::class.java)
+
+        val retrofit = Retrofit.Builder()
+            .baseUrl(baseUrl)
+            .client(okHttpClient)
+            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+            .build()
+        authApi = retrofit.create(AuthApi::class.java)
+        catalogApi = retrofit.create(CatalogApi::class.java)
+        saleApi = retrofit.create(SaleApi::class.java)
+    }
 }

@@ -15,6 +15,8 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
+    currentServerUrl: String = "http://10.0.2.2:8000/api/v1/",
+    onServerUrlChange: ((String) -> Unit)? = null,
     onLoginSuccess: () -> Unit,
     onLoginClick: suspend (String, String) -> Result<Unit>
 ) {
@@ -22,6 +24,8 @@ fun LoginScreen(
     var password by remember { mutableStateOf("Avatar-Demo-2026!") }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var showServerDialog by remember { mutableStateOf(false) }
+    var tempUrl by remember(currentServerUrl) { mutableStateOf(currentServerUrl) }
     val scope = rememberCoroutineScope()
 
     Surface(
@@ -112,6 +116,60 @@ fun LoginScreen(
                 } else {
                     Text("Giriş Yap", fontSize = 16.sp)
                 }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            TextButton(onClick = { showServerDialog = true }) {
+                Text("⚙️ Sunucu: $currentServerUrl", fontSize = 12.sp, color = MaterialTheme.colorScheme.outline)
+            }
+
+            if (showServerDialog) {
+                AlertDialog(
+                    onDismissRequest = { showServerDialog = false },
+                    title = { Text("Sunucu API Adresi") },
+                    text = {
+                        Column {
+                            Text(
+                                "Gerçek telefonda yerel bilgisayarınızın Wi-Fi IP adresini (ör: http://192.168.1.50:8000/api/v1/) giriniz.",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedTextField(
+                                value = tempUrl,
+                                onValueChange = { tempUrl = it },
+                                label = { Text("API Base URL") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                SuggestionChip(
+                                    onClick = { tempUrl = "http://10.0.2.2:8000/api/v1/" },
+                                    label = { Text("Emülatör") }
+                                )
+                                SuggestionChip(
+                                    onClick = { tempUrl = "http://localhost:8000/api/v1/" },
+                                    label = { Text("USB / Local") }
+                                )
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        Button(onClick = {
+                            onServerUrlChange?.invoke(tempUrl)
+                            showServerDialog = false
+                        }) {
+                            Text("Kaydet")
+                        }
+                    },
+                    dismissButton = {
+                        OutlinedButton(onClick = { showServerDialog = false }) {
+                            Text("İptal")
+                        }
+                    }
+                )
             }
         }
     }
