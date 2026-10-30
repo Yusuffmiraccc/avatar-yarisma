@@ -37,14 +37,15 @@ Bu belge, AVATAR Yapay Zekâ Yarışması kapsamında geliştirilen iki zorunlu 
 
 | Model | Çıktı MAE (paket) | Çıktı RMSE | Çıktı MAPE % | EKP MAE (€) | EKP MAPE % |
 |---|---|---|---|---|---|
-| **BASELINE_MEAN** | 3.96 | 5.08 | 3.74 | 0.4728 | 2.60 |
-| **RIDGE** | 2.46 | 3.16 | 2.35 | 0.2978 | 1.64 |
-| **GRADIENT_BOOSTING** | 2.54 | 3.27 | 2.40 | 0.3046 | 1.68 |
+| **BASELINE_MEAN** | 4.04 | 5.18 | 3.81 | 0.4824 | 2.65 |
+| **RIDGE** | 2.61 | 3.30 | 2.49 | 0.3158 | 1.74 |
+| **GRADIENT_BOOSTING** | 2.53 | 3.23 | 2.39 | 0.3030 | 1.67 |
 
-- **Baseline'a Göre İyileşme (Seçilen Model: RIDGE):**
-  - Çıktı Miktarı MAE İyileşmesi: **%37.94**
-  - EKP MAE İyileşmesi: **%37.01**
-- **Zaman Sıralı Holdout (Son %20 Örnek):** Model MAE 2.47 paket vs Baseline MAE 3.73 paket. %95 aralık kapsama oranı: **%84.0**.
+- **Baseline'a Göre İyileşme (Seçilen Model: GRADIENT_BOOSTING):**
+  - Çıktı Miktarı MAE İyileşmesi: **%37.55** (4.04 -> 2.53 paket)
+  - EKP MAE İyileşmesi: **%37.19** (0.4824 -> 0.3030 €/paket)
+- **Zaman Sıralı Holdout (Son %20 Örnek, n=24):** Model MAE 2.94 paket vs Baseline MAE 3.71 paket. %95 aralık kapsama oranı: **%95.8**.
+- **Model Seçim Kuralı:** `backend/app/ml/modeling.py` içindeki `train_production` fonksiyonu, 5-katlı çapraz doğrulamada en düşük çıktı MAE değerini veren adayı otomatik olarak seçer (`best = min(candidates, key=...)`). 120 örnekli üretim veri kümesinde GRADIENT_BOOSTING üstünlük sağlayarak seçilen model olmuştur.
 
 ---
 
