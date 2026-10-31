@@ -1,0 +1,23 @@
+{
+  "manifest_version": 1,
+  "artifact_filename": "model_b_synthetic_candidate.joblib",
+  "artifact_sha256": "31e41871272b6546a3f077c191d7b3da0dab37c5b21607e90f248102ae67769a",
+  "model_version": "model-b-ridge-20261024-synthetic-v1",
+  "data_version": "model-b-synthetic-v1",
+  "source_type": "synthetic",
+  "production_ready": false,
+  "feature_columns": [
+    "hayvan_turu",
+    "karkas_agirligi_kg"
+  ],
+  "target_columns": [
+    "but_kg",
+    "sirt_kg",
+    "omuz_kg",
+    "kaburga_kg",
+    "kiyma_kg",
+    "yan_urun_kg",
+    "kemik_yag_sinir_kg",
+    "fire_kg"
+  ]
+}

@@ -1,0 +1,1 @@
+"""Independent AVATAR Model 2 API package."""

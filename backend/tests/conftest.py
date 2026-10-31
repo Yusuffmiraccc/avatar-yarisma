@@ -4,6 +4,7 @@ import pytest
 import sqlalchemy as sa
 
 TEST_ROOT_URL_DEFAULT = "mysql+pymysql://root:change-root-local-only@localhost:3307/?charset=utf8mb4"
+ROOT_URL = os.environ.get("TEST_ROOT_URL", TEST_ROOT_URL_DEFAULT)
 TEST_DB = "avatar_test"
 
 # If DATABASE_URL is not already set by caller, determine target
@@ -29,6 +30,7 @@ if "DATABASE_URL" not in os.environ:
             os.environ["DATABASE_URL"] = "sqlite:///./avatar_test.db"
 
 os.environ["JWT_SECRET_KEY"] = "test-secret-key-0123456789abcdef0123456789"
+os.environ["ML_SIGNING_SECRET"] = "test-ml-signing-secret-0123456789abcdef0123456789"
 os.environ["REDIS_URL"] = os.environ.get("TEST_REDIS_URL", "redis://:avatar-test-only@localhost:16379/0")
 
 # Configure settings before importing modules that cache them.

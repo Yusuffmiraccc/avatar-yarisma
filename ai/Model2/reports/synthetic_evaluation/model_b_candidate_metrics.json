@@ -1,0 +1,545 @@
+{
+  "data_version": "model-b-synthetic-v1",
+  "source_type": "synthetic",
+  "source_sha256_combined_splits": "22131f7dcaff44a062b7ef6624f1455e22dd0ddddcaca80c5d87e7d5239993e5",
+  "split_counts": {
+    "train": 840,
+    "validation": 180,
+    "test": 180
+  },
+  "split_method": "Provided stratified-by-species CSV partitions; disjoint kayit_id; random seed documented by source package as 20261024. No re-splitting.",
+  "features": [
+    "hayvan_turu",
+    "karkas_agirligi_kg"
+  ],
+  "targets": [
+    "but_kg",
+    "sirt_kg",
+    "omuz_kg",
+    "kaburga_kg",
+    "kiyma_kg",
+    "yan_urun_kg",
+    "kemik_yag_sinir_kg",
+    "fire_kg"
+  ],
+  "validation_metrics": [
+    {
+      "split": "validation",
+      "source_type": "synthetic",
+      "model": "baseline_species_mean_ratio",
+      "target": "but_kg",
+      "n": 180,
+      "mae_kg": 2.450331486085579,
+      "rmse_kg": 4.71837599418962,
+      "r2": 0.9560029718870033
+    },
+    {
+      "split": "validation",
+      "source_type": "synthetic",
+      "model": "baseline_species_mean_ratio",
+      "target": "sirt_kg",
+      "n": 180,
+      "mae_kg": 1.6619921634409034,
+      "rmse_kg": 3.220130707461001,
+      "r2": 0.9486551642344008
+    },
+    {
+      "split": "validation",
+      "source_type": "synthetic",
+      "model": "baseline_species_mean_ratio",
+      "target": "omuz_kg",
+      "n": 180,
+      "mae_kg": 1.8415877724400198,
+      "rmse_kg": 3.7986117061385203,
+      "r2": 0.935173435041406
+    },
+    {
+      "split": "validation",
+      "source_type": "synthetic",
+      "model": "baseline_species_mean_ratio",
+      "target": "kaburga_kg",
+      "n": 180,
+      "mae_kg": 1.8452528242439699,
+      "rmse_kg": 3.401910226595937,
+      "r2": 0.9618425381736585
+    },
+    {
+      "split": "validation",
+      "source_type": "synthetic",
+      "model": "baseline_species_mean_ratio",
+      "target": "kiyma_kg",
+      "n": 180,
+      "mae_kg": 2.502808682644507,
+      "rmse_kg": 4.870839397985207,
+      "r2": 0.9831423986188402
+    },
+    {
+      "split": "validation",
+      "source_type": "synthetic",
+      "model": "baseline_species_mean_ratio",
+      "target": "yan_urun_kg",
+      "n": 180,
+      "mae_kg": 1.808975931901823,
+      "rmse_kg": 3.290443064159802,
+      "r2": 0.8793925217605288
+    },
+    {
+      "split": "validation",
+      "source_type": "synthetic",
+      "model": "baseline_species_mean_ratio",
+      "target": "kemik_yag_sinir_kg",
+      "n": 180,
+      "mae_kg": 0.785561586815141,
+      "rmse_kg": 1.3560111461342452,
+      "r2": 0.7931375980648626
+    },
+    {
+      "split": "validation",
+      "source_type": "synthetic",
+      "model": "baseline_species_mean_ratio",
+      "target": "fire_kg",
+      "n": 180,
+      "mae_kg": 0.8862776632379595,
+      "rmse_kg": 1.5431122254789387,
+      "r2": 0.8098706146067073
+    },
+    {
+      "split": "validation",
+      "source_type": "synthetic",
+      "model": "ridge",
+      "target": "but_kg",
+      "n": 180,
+      "mae_kg": 2.433602732495184,
+      "rmse_kg": 4.678911506207919,
+      "r2": 0.9567358761319926
+    },
+    {
+      "split": "validation",
+      "source_type": "synthetic",
+      "model": "ridge",
+      "target": "sirt_kg",
+      "n": 180,
+      "mae_kg": 1.6471267202611102,
+      "rmse_kg": 3.1857669232357058,
+      "r2": 0.9497451748958037
+    },
+    {
+      "split": "validation",
+      "source_type": "synthetic",
+      "model": "ridge",
+      "target": "omuz_kg",
+      "n": 180,
+      "mae_kg": 1.861478250941381,
+      "rmse_kg": 3.8241872395840164,
+      "r2": 0.9342975595558067
+    },
+    {
+      "split": "validation",
+      "source_type": "synthetic",
+      "model": "ridge",
+      "target": "kaburga_kg",
+      "n": 180,
+      "mae_kg": 1.8432844576699703,
+      "rmse_kg": 3.425334573946994,
+      "r2": 0.9613152515482137
+    },
+    {
+      "split": "validation",
+      "source_type": "synthetic",
+      "model": "ridge",
+      "target": "kiyma_kg",
+      "n": 180,
+      "mae_kg": 2.544662412917853,
+      "rmse_kg": 4.866705468278632,
+      "r2": 0.9831710009031416
+    },
+    {
+      "split": "validation",
+      "source_type": "synthetic",
+      "model": "ridge",
+      "target": "yan_urun_kg",
+      "n": 180,
+      "mae_kg": 1.8157989774823642,
+      "rmse_kg": 3.29769321059119,
+      "r2": 0.8788604443415498
+    },
+    {
+      "split": "validation",
+      "source_type": "synthetic",
+      "model": "ridge",
+      "target": "kemik_yag_sinir_kg",
+      "n": 180,
+      "mae_kg": 0.7861263150865777,
+      "rmse_kg": 1.3396491457383326,
+      "r2": 0.798099596289664
+    },
+    {
+      "split": "validation",
+      "source_type": "synthetic",
+      "model": "ridge",
+      "target": "fire_kg",
+      "n": 180,
+      "mae_kg": 0.8844357164615103,
+      "rmse_kg": 1.5324904196660643,
+      "r2": 0.8124790663307853
+    },
+    {
+      "split": "validation",
+      "source_type": "synthetic",
+      "model": "random_forest",
+      "target": "but_kg",
+      "n": 180,
+      "mae_kg": 2.5920123958937604,
+      "rmse_kg": 4.859205595428159,
+      "r2": 0.9533374143545064
+    },
+    {
+      "split": "validation",
+      "source_type": "synthetic",
+      "model": "random_forest",
+      "target": "sirt_kg",
+      "n": 180,
+      "mae_kg": 1.8314895102981477,
+      "rmse_kg": 3.4702282235957442,
+      "r2": 0.9403698580081792
+    },
+    {
+      "split": "validation",
+      "source_type": "synthetic",
+      "model": "random_forest",
+      "target": "omuz_kg",
+      "n": 180,
+      "mae_kg": 1.9505484534697568,
+      "rmse_kg": 3.840129797039202,
+      "r2": 0.9337486071949536
+    },
+    {
+      "split": "validation",
+      "source_type": "synthetic",
+      "model": "random_forest",
+      "target": "kaburga_kg",
+      "n": 180,
+      "mae_kg": 1.9526934826835676,
+      "rmse_kg": 3.541197324573014,
+      "r2": 0.9586539490265898
+    },
+    {
+      "split": "validation",
+      "source_type": "synthetic",
+      "model": "random_forest",
+      "target": "kiyma_kg",
+      "n": 180,
+      "mae_kg": 2.6723381898243757,
+      "rmse_kg": 5.00895500515844,
+      "r2": 0.982172829389973
+    },
+    {
+      "split": "validation",
+      "source_type": "synthetic",
+      "model": "random_forest",
+      "target": "yan_urun_kg",
+      "n": 180,
+      "mae_kg": 1.738609651414188,
+      "rmse_kg": 3.1287471437334906,
+      "r2": 0.8909548364004362
+    },
+    {
+      "split": "validation",
+      "source_type": "synthetic",
+      "model": "random_forest",
+      "target": "kemik_yag_sinir_kg",
+      "n": 180,
+      "mae_kg": 0.838040122870495,
+      "rmse_kg": 1.5254382562747453,
+      "r2": 0.7382152690422616
+    },
+    {
+      "split": "validation",
+      "source_type": "synthetic",
+      "model": "random_forest",
+      "target": "fire_kg",
+      "n": 180,
+      "mae_kg": 0.960534593082252,
+      "rmse_kg": 1.6939626785091555,
+      "r2": 0.7708805829427543
+    }
+  ],
+  "selection_split": "validation",
+  "selected_candidate": "ridge",
+  "production_readiness": "NOT_READY_SYNTHETIC_ONLY",
+  "candidate_test_metrics": [
+    {
+      "split": "test",
+      "source_type": "synthetic",
+      "model": "baseline_species_mean_ratio",
+      "target": "but_kg",
+      "n": 180,
+      "mae_kg": 2.226231627810563,
+      "rmse_kg": 4.040406786777209,
+      "r2": 0.9652023881707492
+    },
+    {
+      "split": "test",
+      "source_type": "synthetic",
+      "model": "baseline_species_mean_ratio",
+      "target": "sirt_kg",
+      "n": 180,
+      "mae_kg": 1.8769958902969783,
+      "rmse_kg": 3.377345223853489,
+      "r2": 0.945641278510626
+    },
+    {
+      "split": "test",
+      "source_type": "synthetic",
+      "model": "baseline_species_mean_ratio",
+      "target": "omuz_kg",
+      "n": 180,
+      "mae_kg": 1.816938467495048,
+      "rmse_kg": 3.1352035465138153,
+      "r2": 0.9520201785058726
+    },
+    {
+      "split": "test",
+      "source_type": "synthetic",
+      "model": "baseline_species_mean_ratio",
+      "target": "kaburga_kg",
+      "n": 180,
+      "mae_kg": 2.4389552862509234,
+      "rmse_kg": 4.458541967340981,
+      "r2": 0.9332131337253591
+    },
+    {
+      "split": "test",
+      "source_type": "synthetic",
+      "model": "baseline_species_mean_ratio",
+      "target": "kiyma_kg",
+      "n": 180,
+      "mae_kg": 2.688860025597979,
+      "rmse_kg": 4.709506104373628,
+      "r2": 0.9833216548184532
+    },
+    {
+      "split": "test",
+      "source_type": "synthetic",
+      "model": "baseline_species_mean_ratio",
+      "target": "yan_urun_kg",
+      "n": 180,
+      "mae_kg": 1.6206235614409568,
+      "rmse_kg": 3.0590872728187057,
+      "r2": 0.9082800221429514
+    },
+    {
+      "split": "test",
+      "source_type": "synthetic",
+      "model": "baseline_species_mean_ratio",
+      "target": "kemik_yag_sinir_kg",
+      "n": 180,
+      "mae_kg": 1.001072400898666,
+      "rmse_kg": 1.7813880067927392,
+      "r2": 0.7451459996890173
+    },
+    {
+      "split": "test",
+      "source_type": "synthetic",
+      "model": "baseline_species_mean_ratio",
+      "target": "fire_kg",
+      "n": 180,
+      "mae_kg": 0.9566149786173601,
+      "rmse_kg": 1.6396067880755412,
+      "r2": 0.7891245992209064
+    },
+    {
+      "split": "test",
+      "source_type": "synthetic",
+      "model": "ridge",
+      "target": "but_kg",
+      "n": 180,
+      "mae_kg": 2.241548218598031,
+      "rmse_kg": 4.067390858328344,
+      "r2": 0.9647360406888148
+    },
+    {
+      "split": "test",
+      "source_type": "synthetic",
+      "model": "ridge",
+      "target": "sirt_kg",
+      "n": 180,
+      "mae_kg": 1.9175481923929423,
+      "rmse_kg": 3.4496839765385747,
+      "r2": 0.9432877411364186
+    },
+    {
+      "split": "test",
+      "source_type": "synthetic",
+      "model": "ridge",
+      "target": "omuz_kg",
+      "n": 180,
+      "mae_kg": 1.8232352409186288,
+      "rmse_kg": 3.1187332840060766,
+      "r2": 0.9525229621666517
+    },
+    {
+      "split": "test",
+      "source_type": "synthetic",
+      "model": "ridge",
+      "target": "kaburga_kg",
+      "n": 180,
+      "mae_kg": 2.4258068190079403,
+      "rmse_kg": 4.426823007219702,
+      "r2": 0.9341600237926606
+    },
+    {
+      "split": "test",
+      "source_type": "synthetic",
+      "model": "ridge",
+      "target": "kiyma_kg",
+      "n": 180,
+      "mae_kg": 2.7485557505900133,
+      "rmse_kg": 4.75075397763635,
+      "r2": 0.9830282232283352
+    },
+    {
+      "split": "test",
+      "source_type": "synthetic",
+      "model": "ridge",
+      "target": "yan_urun_kg",
+      "n": 180,
+      "mae_kg": 1.6257402049407113,
+      "rmse_kg": 3.047405712022631,
+      "r2": 0.9089791762979809
+    },
+    {
+      "split": "test",
+      "source_type": "synthetic",
+      "model": "ridge",
+      "target": "kemik_yag_sinir_kg",
+      "n": 180,
+      "mae_kg": 1.0096642675360223,
+      "rmse_kg": 1.7938928352654686,
+      "r2": 0.741555438705302
+    },
+    {
+      "split": "test",
+      "source_type": "synthetic",
+      "model": "ridge",
+      "target": "fire_kg",
+      "n": 180,
+      "mae_kg": 0.9590192182623637,
+      "rmse_kg": 1.6398705035859056,
+      "r2": 0.7890567590697073
+    },
+    {
+      "split": "test",
+      "source_type": "synthetic",
+      "model": "random_forest",
+      "target": "but_kg",
+      "n": 180,
+      "mae_kg": 2.3980868449464845,
+      "rmse_kg": 4.235238759755831,
+      "r2": 0.9617655319424754
+    },
+    {
+      "split": "test",
+      "source_type": "synthetic",
+      "model": "random_forest",
+      "target": "sirt_kg",
+      "n": 180,
+      "mae_kg": 1.9104704570102946,
+      "rmse_kg": 3.5187860748353192,
+      "r2": 0.9409929297520941
+    },
+    {
+      "split": "test",
+      "source_type": "synthetic",
+      "model": "random_forest",
+      "target": "omuz_kg",
+      "n": 180,
+      "mae_kg": 1.949498828939304,
+      "rmse_kg": 3.414504229062704,
+      "r2": 0.9430908034421054
+    },
+    {
+      "split": "test",
+      "source_type": "synthetic",
+      "model": "random_forest",
+      "target": "kaburga_kg",
+      "n": 180,
+      "mae_kg": 2.569767156526404,
+      "rmse_kg": 4.563583561925267,
+      "r2": 0.9300291156850311
+    },
+    {
+      "split": "test",
+      "source_type": "synthetic",
+      "model": "random_forest",
+      "target": "kiyma_kg",
+      "n": 180,
+      "mae_kg": 2.9908692079097294,
+      "rmse_kg": 5.400384886250652,
+      "r2": 0.9780693423217666
+    },
+    {
+      "split": "test",
+      "source_type": "synthetic",
+      "model": "random_forest",
+      "target": "yan_urun_kg",
+      "n": 180,
+      "mae_kg": 1.7456219982647194,
+      "rmse_kg": 3.2753526513940776,
+      "r2": 0.8948531322242471
+    },
+    {
+      "split": "test",
+      "source_type": "synthetic",
+      "model": "random_forest",
+      "target": "kemik_yag_sinir_kg",
+      "n": 180,
+      "mae_kg": 1.0155913942711214,
+      "rmse_kg": 1.8493211335262696,
+      "r2": 0.725337687623355
+    },
+    {
+      "split": "test",
+      "source_type": "synthetic",
+      "model": "random_forest",
+      "target": "fire_kg",
+      "n": 180,
+      "mae_kg": 0.9495290335956934,
+      "rmse_kg": 1.677028182569713,
+      "r2": 0.779388967241162
+    }
+  ],
+  "overall_test_metrics": [
+    {
+      "split": "test",
+      "source_type": "synthetic",
+      "model": "baseline_species_mean_ratio",
+      "n": 180,
+      "target_count": 8,
+      "mae_kg_flattened": 1.828286529801059,
+      "rmse_kg_flattened": 3.4430829545706048,
+      "r2_uniform_average": 0.902743656847992
+    },
+    {
+      "split": "test",
+      "source_type": "synthetic",
+      "model": "ridge",
+      "n": 180,
+      "target_count": 8,
+      "mae_kg_flattened": 1.8438897390308315,
+      "rmse_kg_flattened": 3.455626189076674,
+      "r2_uniform_average": 0.902165795635734
+    },
+    {
+      "split": "test",
+      "source_type": "synthetic",
+      "model": "random_forest",
+      "n": 180,
+      "target_count": 8,
+      "mae_kg_flattened": 1.9411793651829687,
+      "rmse_kg_flattened": 3.689998999665063,
+      "r2_uniform_average": 0.8941909387790297
+    }
+  ],
+  "warning": "Bütün kayıtlar sentetik/simüledir; bu sonuçlar gerçek hayvan veya işletme başarısı değildir."
+}

@@ -1,0 +1,40 @@
+services:
+  model2-api:
+    image: avatar-model2-api:local
+    container_name: avatar-model2-api
+    build:
+      context: ..
+      dockerfile: Model2/Dockerfile
+    ports:
+      - "127.0.0.1:8002:8000"
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    environment:
+      API_KEY: ${API_KEY:?Set API_KEY through the runtime environment}
+      APP_ENV: production
+      PYTHONDONTWRITEBYTECODE: "1"
+      MODEL_B_DIR: /app/Model2/models
+      PYTHONPATH: /app
+      MODEL_B_AUDIT_DB: /app/Model2/var/model_b_audit.sqlite3
+    volumes:
+      - ./models:/app/Model2/models:ro
+      - model2_audit_data:/app/Model2/var
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2).read()"
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  model2_audit_data:

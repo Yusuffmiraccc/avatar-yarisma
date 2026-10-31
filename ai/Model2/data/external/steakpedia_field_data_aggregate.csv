@@ -1,0 +1,9 @@
+cut,sheets,meat_kg,portion_yield_pct,usable_pct,fat_removed_pct,mince_scraps_pct,small_sample,period_from,period_to,breeds,note
+ribeye,61,341.2,81,83.9,9.4,2.3,false,2026-07-01,2026-10-21,Black Angus; Wagyu; Angus; Wagyu A4 (Japan); F1,Boneless cube roll (ribeye roll). Bone-in pieces cut as tomahawk are reported separately.
+ribeye-bone-in,14,79.4,71.1,72.2,9.3,2,false,2026-07-01,2026-10-20,Black Angus; Angus; Wagyu,"Bone-in rib, frenched (tomahawk)."
+striploin,11,56,77.2,78.2,7.8,1.1,false,2026-07-01,2026-10-20,Black Angus; Wagyu,Boneless striploin.
+tenderloin,38,226.3,57,72.2,8.7,2.3,false,2026-07-01,2026-10-20,Black Angus,"Whole tenderloin, side muscle on, trimmed in-house to the centre cut, tail and head."
+picanha,28,139.8,57.7,63.8,16.9,3.3,false,2026-07-03,2026-10-17,Black Angus,"Rump cap with its fat cap on, cut into steaks across the grain."
+flank,38,162.5,66,73.1,12.8,5.4,false,2026-07-03,2026-10-21,Black Angus; Angus,"Flank steak, membrane removed."
+skirt,1,1.7,65,68.2,28.8,0,true,2026-09-28,2026-09-28,,"Inside skirt, membrane removed."
+t-bone,28,266.5,77.4,79.6,8.9,0.6,false,2026-07-04,2026-10-21,Black Angus; Wagyu,"Bone-in short loin, cut into T-bone and porterhouse steaks and boneless striploin steaks."

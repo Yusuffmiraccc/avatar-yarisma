@@ -79,8 +79,11 @@ def test_shared_rate_limit_is_enforced_across_processes():
     import subprocess
     import sys
     from pathlib import Path
+    import pytest
 
     from app.services import auth as auth_svc
+    if not auth_svc._is_redis_available():
+        pytest.skip("Shared rate limiting across processes requires running Redis")
 
     backend = Path(__file__).parents[1]
     security = (backend / "SECURITY.md").read_text(encoding="utf-8")
@@ -115,6 +118,7 @@ def test_rate_limit_store_failure_fails_closed(monkeypatch):
             raise ConnectionError("unavailable")
 
     monkeypatch.setattr(auth_svc, "_redis", lambda: UnavailableRedis())
+    monkeypatch.setattr(auth_svc, "_is_redis_available", lambda: True)
     with pytest.raises(AppError) as error:
         auth_svc._reserve_attempt(["pair:127.0.0.1:unavailable@example.test"])
     assert error.value.status_code == 503

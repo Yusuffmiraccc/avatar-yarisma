@@ -208,3 +208,123 @@ def test_interval_coverage_is_reported_for_both_models():
                         "r_BUT": 0.4 + rng.normal(0, 0.01, n), "r_FIRE": 0.1 + rng.normal(0, 0.01, n)})
     art = modeling.train_butchering(bdf, ["BUT", "FIRE"])
     assert 0 <= art["metrics"]["cross_validation"]["interval_95_coverage_percent"] <= 100
+
+
+def test_deserialization_is_prevented_when_signature_is_tampered_or_missing(tmp_path, monkeypatch):
+    import pytest
+    from app.ml import modeling
+
+    path = tmp_path / "protected_model.joblib"
+    modeling.save({"secure": True}, str(path))
+
+    # Verify normal loading succeeds
+    assert modeling.load(str(path)) == {"secure": True}
+
+    called = False
+
+    def explode(*args, **kwargs):
+        nonlocal called
+        called = True
+        raise AssertionError("CRITICAL: joblib.load was called before signature verification!")
+
+    monkeypatch.setattr(modeling.joblib, "load", explode)
+
+    # 1. Tampered bytes must not trigger joblib.load
+    path.write_bytes(path.read_bytes() + b"tampered")
+    with pytest.raises(ValueError, match="signature is missing or invalid"):
+        modeling.load(str(path))
+    assert not called, "joblib.load was called on tampered file!"
+
+    # 2. Missing signature must not trigger joblib.load
+    path.with_name("protected_model.joblib.sig").unlink()
+    with pytest.raises(ValueError, match="signature is missing"):
+        modeling.load(str(path))
+    assert not called, "joblib.load was called when .sig file was missing!"
+
+
+def test_ml_signing_key_is_independent_of_jwt_secret(tmp_path, monkeypatch):
+    from pydantic import SecretStr
+    from app.core.config import get_settings
+    from app.ml import modeling
+
+    path = tmp_path / "independent.joblib"
+    artifact = {"version": "v1-indep"}
+    modeling.save(artifact, str(path))
+
+    # Changing JWT secret must NOT invalidate ML signature verification
+    settings = get_settings()
+    original_jwt = settings.jwt_secret_key
+    monkeypatch.setattr(settings, "jwt_secret_key", SecretStr("completely-different-jwt-key-9999999999"))
+    assert modeling.load(str(path)) == artifact, "JWT secret rotation incorrectly broke ML artifact verification!"
+
+    # But rotating ML secret MUST invalidate artifact signed with old key
+    monkeypatch.setattr(settings, "ml_signing_secret", SecretStr("rotated-ml-secret-key-11111111111111111111"))
+    import pytest
+    with pytest.raises(ValueError, match="signature is missing or invalid"):
+        modeling.load(str(path))
+
+
+def test_missing_ml_signing_secret_fails_safely(tmp_path, monkeypatch):
+    import pytest
+    from app.core.config import get_settings
+    from app.ml import modeling, service
+
+    settings = get_settings()
+    monkeypatch.setattr(settings, "ml_signing_secret", None)
+
+    path = tmp_path / "no_key.joblib"
+    # save fails safely without key
+    with pytest.raises(ValueError, match="ML_SIGNING_SECRET is not configured"):
+        modeling.save({"a": 1}, str(path))
+
+    # load fails safely without key
+    with pytest.raises(ValueError, match="signature is missing"):
+        modeling.load(str(path))
+
+    # service artifact returns None safely, preventing server crash
+    monkeypatch.setattr(service, "_dir", lambda: tmp_path)
+    assert service.artifact("production_yield") is None
+
+
+def test_production_config_enforces_ml_secret_and_key_separation():
+    import pytest
+    from pydantic import SecretStr
+    from app.core.config import Settings
+
+    base_kwargs = {
+        "environment": "production",
+        "database_url": "mysql+pymysql://app:secure-pass@localhost:3306/db",
+        "redis_url": SecretStr("redis://:secure-redis-pass@localhost:6379/0"),
+    }
+
+    # 1. Missing ML secret in production raises RuntimeError
+    with pytest.raises(RuntimeError, match="ML_SIGNING_SECRET must be configured"):
+        Settings(**base_kwargs, jwt_secret_key=SecretStr("j" * 40), ml_signing_secret=None)
+
+    # 2. Weak ML secret (< 32 chars) in production raises RuntimeError
+    with pytest.raises(RuntimeError, match="ML_SIGNING_SECRET must be configured with at least 32 characters"):
+        Settings(**base_kwargs, jwt_secret_key=SecretStr("j" * 40), ml_signing_secret=SecretStr("weak-short-key"))
+
+    # 3. Reusing JWT secret for ML secret in production raises RuntimeError (Key Separation)
+    with pytest.raises(RuntimeError, match="Key Separation"):
+        Settings(**base_kwargs, jwt_secret_key=SecretStr("s" * 40), ml_signing_secret=SecretStr("s" * 40))
+
+    # 4. Valid independent secrets pass cleanly
+    valid = Settings(**base_kwargs, jwt_secret_key=SecretStr("j" * 40), ml_signing_secret=SecretStr("m" * 40))
+    assert valid.ml_signing_secret.get_secret_value() == "m" * 40
+
+
+def test_isolation_outliers_handles_non_finite_and_empty_inputs():
+    import numpy as np
+    from app.ml.anomaly_model import isolation_outliers
+
+    # Empty array
+    mask, scores = isolation_outliers(np.zeros((0, 2)))
+    assert len(mask) == 0 and len(scores) == 0
+
+    # Non-finite inputs (NaN and Inf) must be sanitized without raising exception
+    dirty = np.random.default_rng(0).normal(0, 1, (50, 2))
+    dirty[0, 0] = np.nan
+    dirty[1, 1] = np.inf
+    mask, scores = isolation_outliers(dirty)
+    assert len(mask) == 50 and np.isfinite(scores).all()

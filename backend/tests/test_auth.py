@@ -152,6 +152,9 @@ def test_unknown_login_uses_dummy_hash(db, monkeypatch):
 
 
 def test_login_rate_limit_buckets_expire_in_shared_store():
+    import pytest
+    if not auth_svc._is_redis_available():
+        pytest.skip('Redis service on localhost:16379 is not running')
     key = "pair:127.0.0.1:old@avatar.test"
     auth_svc._record_failures([key])
     redis_key = auth_svc._storage_keys([key])[0]

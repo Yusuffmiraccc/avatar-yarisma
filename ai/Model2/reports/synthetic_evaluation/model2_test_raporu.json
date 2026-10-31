@@ -1,0 +1,107 @@
+{
+  "ozet": {
+    "model_version": "model-b-ridge-20261024-synthetic-v1",
+    "data_version": "model-b-synthetic-v1",
+    "source_type": "synthetic",
+    "production_ready": false,
+    "test_kumesi_kayit_sayisi": 180,
+    "detayli_ornek_sayisi": 10,
+    "hedef_sayisi": 8,
+    "tam_test_tum_hedefler_MAE_kg": 1.8438897390308315,
+    "tam_test_tum_hedefler_RMSE_kg": 3.455626189076674,
+    "tam_test_uniform_average_R2": 0.902165795635734,
+    "tam_test_tahminlerin_mutlak_hata_1kg_veya_altinda_pct": 63.05555555555556,
+    "tam_test_tahminlerin_mutlak_hata_2kg_veya_altinda_pct": 75.48611111111111,
+    "uyari": "Sentetik holdout degerlendirmesidir; gercek saha dogrulugu veya uretim onayi degildir."
+  },
+  "hedef_metrikleri": [
+    {
+      "hedef": "but_kg",
+      "test_kayit_sayisi": 180,
+      "tam_test_MAE_kg": 2.241548218598031,
+      "tam_test_RMSE_kg": 4.067390858328344,
+      "tam_test_R2": 0.9647360406888148,
+      "10_ornek_MAE_kg": 1.9025067714571258,
+      "10_ornek_RMSE_kg": 2.7635720161067403,
+      "tam_test_mutlak_hata_1kg_veya_altinda_pct": 57.77777777777777,
+      "tam_test_mutlak_hata_2kg_veya_altinda_pct": 75.55555555555556
+    },
+    {
+      "hedef": "sirt_kg",
+      "test_kayit_sayisi": 180,
+      "tam_test_MAE_kg": 1.9175481923929423,
+      "tam_test_RMSE_kg": 3.4496839765385747,
+      "tam_test_R2": 0.9432877411364186,
+      "10_ornek_MAE_kg": 2.8987704877267624,
+      "10_ornek_RMSE_kg": 4.93793091372522,
+      "tam_test_mutlak_hata_1kg_veya_altinda_pct": 60.55555555555555,
+      "tam_test_mutlak_hata_2kg_veya_altinda_pct": 71.11111111111111
+    },
+    {
+      "hedef": "omuz_kg",
+      "test_kayit_sayisi": 180,
+      "tam_test_MAE_kg": 1.8232352409186288,
+      "tam_test_RMSE_kg": 3.1187332840060766,
+      "tam_test_R2": 0.9525229621666517,
+      "10_ornek_MAE_kg": 2.7064919662322717,
+      "10_ornek_RMSE_kg": 3.9498616537776914,
+      "tam_test_mutlak_hata_1kg_veya_altinda_pct": 62.22222222222222,
+      "tam_test_mutlak_hata_2kg_veya_altinda_pct": 75.0
+    },
+    {
+      "hedef": "kaburga_kg",
+      "test_kayit_sayisi": 180,
+      "tam_test_MAE_kg": 2.4258068190079403,
+      "tam_test_RMSE_kg": 4.426823007219702,
+      "tam_test_R2": 0.9341600237926606,
+      "10_ornek_MAE_kg": 2.977376277407873,
+      "10_ornek_RMSE_kg": 4.5136096864066495,
+      "tam_test_mutlak_hata_1kg_veya_altinda_pct": 59.44444444444444,
+      "tam_test_mutlak_hata_2kg_veya_altinda_pct": 71.66666666666667
+    },
+    {
+      "hedef": "kiyma_kg",
+      "test_kayit_sayisi": 180,
+      "tam_test_MAE_kg": 2.7485557505900133,
+      "tam_test_RMSE_kg": 4.75075397763635,
+      "tam_test_R2": 0.9830282232283352,
+      "10_ornek_MAE_kg": 3.4150181735209117,
+      "10_ornek_RMSE_kg": 4.7964988220710785,
+      "tam_test_mutlak_hata_1kg_veya_altinda_pct": 53.888888888888886,
+      "tam_test_mutlak_hata_2kg_veya_altinda_pct": 68.33333333333333
+    },
+    {
+      "hedef": "yan_urun_kg",
+      "test_kayit_sayisi": 180,
+      "tam_test_MAE_kg": 1.6257402049407113,
+      "tam_test_RMSE_kg": 3.047405712022631,
+      "tam_test_R2": 0.9089791762979809,
+      "10_ornek_MAE_kg": 1.5519703890259584,
+      "10_ornek_RMSE_kg": 2.6492532500305486,
+      "tam_test_mutlak_hata_1kg_veya_altinda_pct": 65.0,
+      "tam_test_mutlak_hata_2kg_veya_altinda_pct": 77.22222222222223
+    },
+    {
+      "hedef": "kemik_yag_sinir_kg",
+      "test_kayit_sayisi": 180,
+      "tam_test_MAE_kg": 1.0096642675360223,
+      "tam_test_RMSE_kg": 1.7938928352654686,
+      "tam_test_R2": 0.741555438705302,
+      "10_ornek_MAE_kg": 0.9919394140481421,
+      "10_ornek_RMSE_kg": 1.5019836833939109,
+      "tam_test_mutlak_hata_1kg_veya_altinda_pct": 71.11111111111111,
+      "tam_test_mutlak_hata_2kg_veya_altinda_pct": 81.66666666666667
+    },
+    {
+      "hedef": "fire_kg",
+      "test_kayit_sayisi": 180,
+      "tam_test_MAE_kg": 0.9590192182623637,
+      "tam_test_RMSE_kg": 1.6398705035859056,
+      "tam_test_R2": 0.7890567590697073,
+      "10_ornek_MAE_kg": 1.8469705348874144,
+      "10_ornek_RMSE_kg": 2.7870538125193587,
+      "tam_test_mutlak_hata_1kg_veya_altinda_pct": 74.44444444444444,
+      "tam_test_mutlak_hata_2kg_veya_altinda_pct": 83.33333333333334
+    }
+  ]
+}

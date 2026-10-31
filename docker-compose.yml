@@ -70,7 +70,7 @@ services:
       ENVIRONMENT: ${ENVIRONMENT:-local}
       ML_DIR: /srv/ml_artifacts
     ports:
-      - "127.0.0.1:8000:8000"
+      - ":8000:8000"
     volumes:
       - avatar_ml:/srv/ml_artifacts
     healthcheck:

@@ -1,0 +1,13 @@
+# Only sources copied by Model1/Dockerfile enter the build context.
+**
+!Model1/
+!Model1/requirements.txt
+!Model1/app/
+!Model1/app/**
+!Model2/
+!Model2/Dockerfile
+!Model2/requirements.txt
+!Model2/app/
+!Model2/app/**
+!Model2/sql/
+!Model2/sql/**

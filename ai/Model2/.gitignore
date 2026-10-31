@@ -1,0 +1,10 @@
+# Operational audit records can contain sensitive facility measurements.
+/var/*.sqlite3
+/var/*.sqlite3-wal
+/var/*.sqlite3-shm
+
+# Keep real individual measurements and promoted production artifacts out of Git.
+/data/raw/measured/*
+!/data/raw/measured/.gitkeep
+/models/model_b_production.joblib
+/models/model_b_production.manifest.json

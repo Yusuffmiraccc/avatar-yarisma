@@ -78,3 +78,15 @@ backend/ml_artifacts/
 artifacts/
 *.apk
 *.aab
+
+# Database dumps, migration snapshots, and repair backups
+/*.sql
+*.dump.sql
+.repair-backup-*/
+avatar_db_*.sql
+
+# Screenshots and media artifacts
+avatar-screen.png
+
+# Root audit reports
+/AVATAR_*.md

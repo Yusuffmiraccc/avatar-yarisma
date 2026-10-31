@@ -52,74 +52,46 @@ flowchart TD
 
 ---
 
-## 2. Modüller Arası Veri Akışı ve Görev Bölüşümü
+## 2. Modüller Arası Veri Akışları
 
-### 2.1 Web Yönetim Paneli (`web/`)
-- Masaüstü ve tablet uyumlu React 19 + TypeScript + Tailwind CSS paneli.
-- Üretim emirleri, kuzu parçalama reçeteleri, hammadde girişleri, stok hareketleri, müşteri/market yönetimi, ileri-geri lot izleme, geri çağırma yönetimi ve ML tahminlerini içerir.
-- Rol bazlı maliyet gizleme: `costs:read` izni olmayan kullanıcılara birim maliyet (EKP) ve kâr alanları API ve arayüz seviyesinde gizlenir.
+### 2.1 Hammadde Kabulü ve Stok Girişi
+1. Tedarikçiden hammadde (Dana Eti, Baharat, Bağırsak veya Bütün Kuzu Karkas) teslim alınır (`lots.receive`).
+2. Tekil `Lot` kaydı açılır; `stock_movements` tablosuna `direction="IN"`, `movement_type="RECEIPT"` hareketi yazılır.
+3. `inventory_balances.on_hand_quantity` atomik olarak artırılır.
 
-### 2.2 Android Satış ve Operasyon Uygulaması (`android/`)
-- Saha satış personeli (`SALES`) ve operatörlerin mobil arayüzüdür.
-- Room SQLite veritabanı yerel okuma önbelleği ve çevrimdışı işlem kuyruğudur.
-- Satış oluştururken yerel UUID üretilir (`client_uuid`), `Idempotency-Key` olarak sunucuya aktarılır.
-- Geri çağrılan / bloke lotların satışı hem yerelde hem sunucuda `409 LOT_BLOCKED` ile kesin olarak engellenir.
-- Her satış satırında lot kodu, miktar, sabit liste fiyatı ve sunucudan dönen `stock_movement_id` kalıcı olarak saklanır.
+### 2.2 Dış Fason Üretim ve EKP Maliyeti
+1. Üretim emri (`ProductionOrder`) oluşturulur; tüketilecek hammadde lotları (`production_inputs`) ve miktarları bağlanır.
+2. Dış hizmet faturası (`production_service_costs`) eklenir (85 paket × 5,50 € = 467,50 €).
+3. Üretim emri başlatıldığında (`IN_PROGRESS`) stok henüz düşmez.
+4. Üretim kabulü (`production.complete`):
+   - Hammadde lotlarından `OUT` hareketi düşülür (`on_hand_quantity` 0'a iner).
+   - Mamul lotu (`SUC-2026-045`) için `IN` hareketi (85 paket) açılır.
+   - Gerçek birim maliyet (EKP) hesaplanır: $\frac{1.543,50}{85} = 18,1588... \longrightarrow \mathbf{18,16\text{ €/paket}}$.
+   - `LotGenealogyEdge` kayıtları ile hammadde $\rightarrow$ mamul bağlantısı kurulur.
 
-### 2.3 Backend & REST API (`backend/`)
-- FastAPI tabanlı REST API; `contract/openapi.json` tek sözleşme kaynağıdır.
-- Deny-by-default yetkilendirme mimarisi; tüm endpoint'ler rol ve yetki kontrollerinden geçer.
-- Hata formatı standarttır:
-  ```json
-  {
-    "error": {
-      "code": "LOT_BLOCKED",
-      "message": "Bu lot geri çağrılmış/bloke edilmiştir.",
-      "details": {}
-    },
-    "request_id": "req-xxx"
-  }
-  ```
+### 2.3 Kuzu Karkas Parçalama ve Kuruş Kaybı Önleme
+1. 25 kg karkas kuzu girişi yapılır. Şartnamedeki 25 kg × 11,50 € = 287,50 € vs 351,00 € çelişkisi `SOURCE_COST_MISMATCH` uyarısıyla yakalanır.
+2. Parçalama emri başlatılır; 22 kg parça et (But 12, Sırt 6, Omuz 4 kg) ve 3 kg fire (`BONE_WASTE`) kaydedilir.
+3. `BY_WEIGHT` yöntemiyle toplam 351,00 € maliyet parça etlere (308,88 €) ve fireye (42,12 €) dağıtılır. Kuruş yuvarlama artığı deterministik olarak son satıra aktarılır.
 
----
+### 2.4 Satış, Sevkiyat ve Idempotency
+1. İstemci (Android veya Web) `Idempotency-Key: <UUID>` başlığıyla satış siparişi gönderir.
+2. Backend katalog fiyatını (`product_prices`) doğrular; yetkisiz fiyat manipülasyonu `400 Bad Request` ile engellenir.
+3. Satış ve sevkiyat tek transaction'da tamamlanır: `Shipment` durumu `SHIPPED` olur, fiziksel stok `OUT` düşer, `stock_movement_id` satış satırına işlenir.
+4. Ağ kesintisi nedeniyle aynı istek tekrar iletilirse, veritabanındaki kayıt kontrol edilir ve mükerrer stok düşümü olmadan `Idempotent-Replay: true` başlığı ile önceki yanıt döndürülür.
 
-## 3. Temel İş Akışları ve Formüller
-
-### 3.1 Dış Hizmetle Üretim ve Gerçek Maliyet (EKP)
-- **Referans Senaryo:**
-  - 100 kg et × 9,70 € = 970,00 €
-  - 2 kg baharat × 24,00 € = 48,00 €
-  - 5 kg bağırsak × 11,60 € = 58,00 €
-  - 85 paket × 5,50 € hizmet = 467,50 €
-  - **Toplam Maliyet:** $970.00 + 48.00 + 58.00 + 467.50 = 1.543,50\text{ €}$
-  - **Gerçek Üretim:** 85 paket
-  - **Gerçek EKP:** $\frac{1.543,50}{85} = 18,158823...\text{ €}$ (hesaplamada 4 basamak, gösterimde `18,16 €`).
-- Hammadde ve hizmet maliyetleri iki kez toplanmaz.
-- Üretim tamamlama (`complete`), tüketim `OUT` hareketleri, mamul `IN` hareketi, lot şeceresi ve maliyet kaydını tek bir veritabanı transaction'ında atomik olarak uygular.
-
-### 3.2 Bütün Kuzu Parçalama ve Ağırlık/Maliyet Dengesi
-- Giriş: Canlı/karkas hayvan partisi (`25 kg` kuzu, alış `351,00 €`, beyan birim fiyat `11,50 €/kg`).
-- PDF belgesindeki aritmetik tutarsızlık ($25 \times 11,50 = 287,50 \neq 351,00$ ve parça toplamı $22\text{ kg} \neq 25\text{ kg}$) sessizce yutulmaz; sistem aradaki farkı kullanıcıya açık uyarı ve `weight_variance_records` olarak sunar.
-- Maliyet Dağıtım Yöntemleri:
-  - `BY_WEIGHT`: Ağırlık oranına göre paylaştırma. Yuvarlama artıkları deterministik olarak son satıra aktarılır; kuruş farkı oluşmaz.
-  - `BY_VALUE`: Ürün liste fiyatı bazlı değer ağırlıklı dağıtım.
-
-### 3.3 Lot İzlenebilirliği ve Geri Çağırma (Recall)
-- **Şecere Grafiği:**
-  $$\text{Hammadde Lotu (ET-2026-001)} \longrightarrow \text{Üretim Emri (URT-2026-045)} \longrightarrow \text{Mamul Lotu (SUC-2026-045)} \longrightarrow \text{Sevkiyatlar (Market A: 30, Market B: 25, Market C: 30)}$$
-- Geri çağırma aktive edildiğinde:
-  1. Kaynak lot ile bağlantılı tüm üretimler, mamul lotları ve sevk edilen marketler ilişkisel grafikten recursive/join sorgularıyla anında listelenir.
-  2. İlgili mamul lotları `BLOCKED` statüsüne alınır.
-  3. Yeni satış ve sevkiyat istekleri veritabanı kilitleriyle (`with_for_update`) eşzamanlı yarış koşullarına karşı korunur ve reddedilir.
-  4. Recall `RESOLVED` olsa dahi blokaj otomatik kalkmaz; ayrı bir yetkili `lots:unblock` işlemi gerekir.
+### 2.5 İzlenebilirlik ve Geri Çağırma (Recall)
+1. `ET-2026-001` hammadde lotunda mikrobiyolojik risk tespit edildiğinde `recall.create` ve `recall.activate` çalıştırılır.
+2. Sistem şecere grafı üzerinden ileriye doğru yürür: `ET-2026-001` $\rightarrow$ `URT-2026-045` $\rightarrow$ `SUC-2026-045` $\rightarrow$ Market A (30), Market B (25), Market C (30).
+3. Mamul lotu `LotBlock` ile kilitlenir.
+4. Bloke lot satılmaya çalışıldığında backend `409 Conflict: LOT_BLOCKED` yanıtı döner.
 
 ---
 
-## 4. Güvenlik ve İzolasyon Sınırları
+## 3. Güvenlik ve İzolasyon Sınırları
 
-1. **Parola Güvenliği:** Argon2id hash algoritması kullanılır.
-2. **Token Döngüsü:**
-   - Access Token: 15 dakika ömürlü JWT (`HS256`).
-   - Refresh Token: 7 gün ömürlü, sunucuda SHA-256 hash ile saklanır, her kullanımda yenilenir (rotation). Eski bir refresh token tekrar kullanılırsa aile iptal edilir (family revocation).
-3. **Idempotency Güvencesi:** `Idempotency-Key` başlığı satış ve sevkiyatta zorunludur. Aynı anahtar ve gövde ilk cevabı döner; aynı anahtar ve farklı gövde `409 IDEMPOTENCY_KEY_REUSED` üretir.
-4. **Denetim Defteri (Audit):** Hard delete yasaktır. Her kritik işlem (giriş, üretim, parçalama, düzeltme, recall) aktör, zaman, işlem tipi ve detaylarla `audit_events` tablosuna yazılır.
+- **Rol Tabanlı Erişim Denetimi (RBAC):** `ADMIN`, `OPERATOR`, `SALES`, `TRACEABILITY_MANAGER`, `VIEWER`.
+- **Hassas Maliyet Maskeleme:** `costs:read` izni olmayan kullanıcıların (`SALES`, `VIEWER`) API yanıtlarındaki tüm `unit_cost`, `total_cost`, `ekp`, `gross_profit` alanları `redact_cost_data` fonksiyonu ile maskelenir.
+- **Argon2id Parola Koruması:** Demo parolası dahil tüm parolalar Argon2id algoritmasıyla hash'lenerek saklanır.
+- **JWT & Token Rotation:** 15 dakikalık access token, 7 günlük refresh token; refresh reuse anında tespit edilerek oturum ailesi iptal edilir.
+- **Yapay Zekâ İzolasyonu:** ML modelleri ve tahminleri (`ml_predictions`) stok defterlerinden ve muhasebe kayıtlarından tamamen izoledir.

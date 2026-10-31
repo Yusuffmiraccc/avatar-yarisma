@@ -28,7 +28,10 @@ def test_sales_price_override_role_matrix_and_audit(client, auth, db):
     assert result.status_code == 201 and result.json()["lines"][0]["unit_price"] == "20.0000"
     audit = db.execute(__import__("sqlalchemy").text(
         "SELECT details FROM audit_events WHERE entity_type='sale' ORDER BY id DESC LIMIT 1")).scalar_one()
-    assert "Müşteri sözleşmesi" in str(audit) and "24.0000" in str(audit) and "20.0000" in str(audit)
+    import json
+    audit_data = json.loads(audit) if isinstance(audit, str) else audit
+    audit_str = json.dumps(audit_data, ensure_ascii=False)
+    assert "Müşteri sözleşmesi" in audit_str and "24.0000" in str(audit) and "20.0000" in str(audit)
 
 
 def test_concurrent_sales_cannot_oversell_and_audit_failure_rolls_back(client, auth, monkeypatch):

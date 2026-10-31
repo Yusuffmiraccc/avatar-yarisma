@@ -19,6 +19,7 @@ from app.services import audit
 
 _mem_lock = threading.Lock()
 _mem_attempts: dict[str, int] = {}
+_mem_inflight: dict[str, int] = {}
 _redis_lock = threading.Lock()
 _redis_client: Redis | None = None
 _redis_url: str | None = None
@@ -142,7 +143,7 @@ def rate_limit_store_ready() -> bool:
     try:
         return bool(_redis().ping())
     except (RedisError, OSError):
-        return True
+        return False
 
 
 def _reserve_attempt(keys: list[str]) -> None:
@@ -150,21 +151,18 @@ def _reserve_attempt(keys: list[str]) -> None:
         with _mem_lock:
             for k in keys:
                 limit = IP_MAX_ATTEMPTS if k.startswith("ip:") else MAX_ATTEMPTS
-                if _mem_attempts.get(k, 0) >= limit:
+                if _mem_attempts.get(k, 0) + _mem_inflight.get(k, 0) >= limit:
                     raise AppError(429, "RATE_LIMITED", "Çok fazla başarısız giriş denemesi. Daha sonra tekrar deneyin.")
-            return
+            for k in keys:
+                _mem_inflight[k] = _mem_inflight.get(k, 0) + 1
+        return
 
     storage_keys = _storage_keys(keys)
     limits = [IP_MAX_ATTEMPTS if key.startswith("ip:") else MAX_ATTEMPTS for key in keys]
     try:
         allowed = _redis().eval(_RESERVE_SCRIPT, len(storage_keys), *storage_keys, *limits, WINDOW)
-    except (RedisError, OSError):
-        with _mem_lock:
-            for k in keys:
-                limit = IP_MAX_ATTEMPTS if k.startswith("ip:") else MAX_ATTEMPTS
-                if _mem_attempts.get(k, 0) >= limit:
-                    raise AppError(429, "RATE_LIMITED", "Çok fazla başarısız giriş denemesi. Daha sonra tekrar deneyin.")
-            return
+    except (RedisError, OSError) as exc:
+        raise _rate_limit_unavailable(exc) from exc
     if not allowed:
         raise AppError(429, "RATE_LIMITED", "Çok fazla başarısız giriş denemesi. Daha sonra tekrar deneyin.")
 
@@ -172,9 +170,13 @@ def _reserve_attempt(keys: list[str]) -> None:
 def _finish_attempt(keys: list[str], *, failed: bool, successful: bool = False) -> None:
     if not _is_redis_available():
         with _mem_lock:
+            for k in keys:
+                if k in _mem_inflight:
+                    _mem_inflight[k] = max(0, _mem_inflight[k] - 1)
             if successful:
                 for k in keys:
                     _mem_attempts.pop(k, None)
+                    _mem_inflight.pop(k, None)
             elif failed:
                 for k in keys:
                     _mem_attempts[k] = _mem_attempts.get(k, 0) + 1
@@ -183,14 +185,8 @@ def _finish_attempt(keys: list[str], *, failed: bool, successful: bool = False) 
     try:
         storage_keys = _storage_keys(keys)
         _redis().eval(_FINISH_SCRIPT, len(storage_keys), *storage_keys, int(failed), WINDOW, int(successful))
-    except (RedisError, OSError):
-        with _mem_lock:
-            if successful:
-                for k in keys:
-                    _mem_attempts.pop(k, None)
-            elif failed:
-                for k in keys:
-                    _mem_attempts[k] = _mem_attempts.get(k, 0) + 1
+    except (RedisError, OSError) as exc:
+        raise _rate_limit_unavailable(exc) from exc
 
 
 def _record_failures(keys: list[str]) -> None:
@@ -207,15 +203,14 @@ def _record_failures(keys: list[str]) -> None:
                 pipe.incr(key)
                 pipe.expire(key, WINDOW)
                 pipe.execute()
-    except (RedisError, OSError):
-        with _mem_lock:
-            for k in keys:
-                _mem_attempts[k] = _mem_attempts.get(k, 0) + 1
+    except (RedisError, OSError) as exc:
+        raise _rate_limit_unavailable(exc) from exc
 
 
 def reset_rate_limits() -> None:
     with _mem_lock:
         _mem_attempts.clear()
+        _mem_inflight.clear()
     if _is_redis_available():
         try:
             client = _redis()
@@ -293,10 +288,24 @@ def refresh(db: Session, raw_token: str, request_id: str | None) -> tuple[User, 
     user = db.get(User, sess.user_id)
     if user is None or not user.is_active:
         raise AppError(401, "UNAUTHENTICATED", "Hesap devre dışı.")
-    tokens = _issue(db, user, sess.family_id, raw_refresh_token=_retry_token(sess))
-    new_sess = tokens.pop("_session")
-    sess.revoked_at = utcnow()
-    sess.replaced_by_id = new_sess.id
+    from sqlalchemy.exc import IntegrityError
+    try:
+        tokens = _issue(db, user, sess.family_id, raw_refresh_token=_retry_token(sess))
+        new_sess = tokens.pop("_session")
+        sess.revoked_at = utcnow()
+        sess.replaced_by_id = new_sess.id
+        db.flush()
+    except IntegrityError:
+        db.rollback()
+        # Concurrency race: the competing request won and created the successor
+        sess = db.scalar(select(RefreshSession).where(RefreshSession.token_hash == hash_token(raw_token)))
+        if sess is not None and sess.revoked_at is not None and sess.replaced_by_id is not None:
+            successor = db.get(RefreshSession, sess.replaced_by_id)
+            if successor is not None and successor.revoked_at is None and successor.expires_at >= utcnow():
+                access, expires_in = create_access_token(user.id, [r.code for r in user.roles], user.token_version)
+                return user, {"access_token": access, "refresh_token": _retry_token(sess),
+                              "token_type": "bearer", "expires_in": expires_in}
+        raise
     audit.record(db, actor_id=user.id, action="AUTH_REFRESH", entity_type="user", entity_id=user.id, request_id=request_id)
     return user, tokens
 

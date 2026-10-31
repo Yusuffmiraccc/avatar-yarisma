@@ -172,9 +172,12 @@ def _client_as(role):
     return c, {"Authorization": f"Bearer {tok}"}
 
 
-def test_recall_vs_dispatch_race_is_consistent(client, auth):
+def test_recall_vs_dispatch_race_is_consistent(client, auth, db):
     """Recall aktivasyonu ile dispatch yarışı: SHIPPED olan her sevkiyat recall etki kayıtlarında olmalı;
     kaybeden taraf LOT_BLOCKED almalı; stok tutarlı kalmalı."""
+    import pytest
+    if db.bind and db.bind.dialect.name == "sqlite":
+        pytest.skip("Row-level locking race test requires MySQL (SELECT FOR UPDATE is unsupported in SQLite)")
     h = auth("ADMIN")
     ctx = build_demo(client, h, ship=(30, 25, 20))  # 10 paket kalır
     suc, m = ctx["suc"], ctx["markets"][0]
