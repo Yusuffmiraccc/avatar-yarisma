@@ -102,5 +102,6 @@ cd android
 - **Gerçek Telefon (Wi-Fi / LAN):** Telefon ve bilgisayar aynı Wi-Fi ağına bağlandıktan sonra bilgisayarın yerel IP adresi girilir (Ör: `http://192.168.1.2:8000/api/v1/`).
 - **Android Emülatörü:** Varsayılan olarak `http://10.0.2.2:8000/api/v1/` adresini kullanır (hazır çip ile tek dokunuşla seçilebilir).
 - **USB Kablolu Bağlantı:** USB ile bağlandıktan sonra `adb reverse tcp:8000 tcp:8000` komutu çalıştırılarak `http://localhost:8000/api/v1/` adresiyle doğrudan erişilebilir.
-- **Güvenlik ve Ağ İlkesi:** `network_security_config.xml` üzerinden yerel ağ IP'leri ve emülatör loopback adresleri için cleartext HTTP trafiğine izin verilmiştir.
-- **Demo Kullanıcısı:** `sales@avatar.demo` / `Avatar-Demo-2026!` (veya `satis@avatar.com` / `satis123`)
+- **Güvenlik ve Ağ İlkesi:** Düz HTTP (cleartext) yalnızca debug derlemesinde açıktır (`src/debug/res/xml/network_security_config.xml`). Release derlemesi cleartext ve kullanıcı sertifikalarını reddeder; üretimde HTTPS gerekir.
+- **LAN notu:** Compose API'yi `127.0.0.1:8000`'e bağlar. Telefonla LAN IP üzerinden bağlanmak için `docker-compose.yml` içindeki portu bilerek `8000:8000` yapın veya `adb reverse` kullanın.
+- **Demo Kullanıcısı:** `sales@avatar.demo` / `Avatar-Demo-2026!`

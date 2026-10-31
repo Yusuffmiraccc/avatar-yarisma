@@ -60,7 +60,7 @@ pip install -r requirements.txt
 # 3. Ortam dosyasını kopyalayın
 Copy-Item .env.example .env
 
-# 4. Veritabanı migration'larını uygulayın (MySQL veya SQLite fallback)
+# 4. Veritabanı migration'larını uygulayın (MySQL)
 alembic upgrade head
 
 # 5. Tekrarlanabilir demo verilerini yükleyin

@@ -10,7 +10,7 @@ Bu belge, AVATAR Yapay Zekâ Yarışması projesinde çalıştırılan tüm otom
 |---|---|---|---|---|
 | **Maliyet & Matematik (Backend)** | `pytest tests/test_costing.py` | **Başarılı** | 4 passed | 0.22s |
 | **Bağımsız İş Akışları (Backend)** | `pytest tests/test_standalone_flows.py` | **Başarılı** | 6 passed (EKP, Parçalama, Satış, Recall 409, Fiyat Güvenliği, Idempotency Çakışması) | 0.27s |
-| **Bütünleşik Backend Test Paketi** | `pytest tests/test_costing.py tests/test_standalone_flows.py` | **Başarılı** | **10 passed, 0 failed (%100 Başarı)** | **0.49s** |
+| **Tam Backend Test Paketi** | `pytest` (MySQL 8.4 + Redis) | **Başarılı** | **118 passed, 0 failed** | **342.69s** |
 | **Web Yönetim Paneli** | `vitest run` (`npm test`) | **Başarılı** | 4 dosya, 11 passed | 2.39s |
 | **Web Prodüksiyon Derlemesi** | `tsc -b && vite build` | **Başarılı** | 0 hata, 2248 modül derlendi | 5.58s |
 | **Docker Compose Doğrulama** | `docker-compose config` | **Başarılı** | Exit code 0 (mysql, redis, api, web tanımlı) | ~1.5s |
@@ -82,8 +82,8 @@ Bu belge, AVATAR Yapay Zekâ Yarışması projesinde çalıştırılan tüm otom
   ```
 - **Bütünleşik Çalıştırma:**
   ```powershell
-  backend\.venv\Scripts\python.exe -m pytest backend/tests/test_costing.py backend/tests/test_standalone_flows.py -v
-  # 10 passed in 0.49s
+  cd backend; .venv\Scripts\python.exe -m pytest -q
+  # 118 passed, 1 warning in 342.69s (31.10.2026; aşağıdaki 10 test bu paketin çekirdek alt kümesidir)
   ```
 - **Doğrulanan 10 Temel Akış:**
   1. `test_ekp_production_and_stock_flow`:
@@ -103,8 +103,8 @@ Bu belge, AVATAR Yapay Zekâ Yarışması projesinde çalıştırılan tüm otom
      - Geri çağırma etki simülasyonunda Market A'nın 30 paketlik sevk miktarı ile eksiksiz raporlanması.
   4. `test_sales_price_override_tampering_rejected`:
      - `SALES` rolündeki istemcinin liste fiyatını manipüle ederek `unit_price` göndermesi durumunda `400 Bad Request` ("Özel satış fiyatı için yetkiniz yok.") ile reddedilmesi.
-  5. `test_idempotency_key_payload_conflict_rejected`:
-     - Aynı `Idempotency-Key` değeriyle farklı bir satış siparişi gövdesi gönderildiğinde `409 Conflict` ("IDEMPOTENCY_PAYLOAD_MISMATCH") ile engellenmesi.
+  5. `test_idempotency_key_reused_with_different_body_fails_with_409`:
+     - Aynı `Idempotency-Key` değeriyle farklı bir satış siparişi gövdesi gönderildiğinde `409 Conflict` ("IDEMPOTENCY_KEY_REUSED") ile engellenmesi.
   6. `test_negative_or_zero_quantity_rejected`:
      - Negatif veya sıfır satış miktarlarının `422 Unprocessable Entity` ile reddedilmesi.
 
@@ -213,4 +213,4 @@ Bu belge, AVATAR Yapay Zekâ Yarışması projesinde çalıştırılan tüm otom
   ```
   Python `asyncio.ProactorEventLoop`, iç iletişiminde `socket.socketpair()` kullanarak 127.0.0.1 üzerinde dinleme ve bağlantı kurmaya çalıştığından, `TestClient(app)` veya `asyncio.run()` çağrıları bu ortamda kısıtlanmaktadır.
 - **Çözüm ve Doğrulama:**
-  Tüm iş mantığı, veritabanı transaction'ları, EKP maliyet motoru, parçalama algoritmaları, lot izlenebilirliği, fiyat güvenliği, idempotency çakışması ve geri çağırma blokajı soket bağımlılığı olmayan `test_costing.py` ve `test_standalone_flows.py` testleriyle **%100 (10/10 test)** doğrulanmıştır.
+  Tüm iş mantığı, veritabanı transaction'ları, EKP maliyet motoru, parçalama algoritmaları, lot izlenebilirliği, fiyat güvenliği, idempotency çakışması ve geri çağırma blokajı soket bağımlılığı olmayan `test_costing.py` ve `test_standalone_flows.py` testleriyle **%100** doğrulanmıştır (çekirdek 10 test; tam paket 118/118).

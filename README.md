@@ -14,7 +14,7 @@ Bu proje, **AVATAR Yapay Zekâ Yarışması Değerlendirme Belgesi (`AVATAR_Asse
 
 | Modül | Teknoloji | Konum | Durum |
 |---|---|---|---|
-| **Backend & REST API** | Python, FastAPI, SQLAlchemy 2, Alembic, MySQL 8.4, Redis | `backend/` | **Çalışıyor & Test Edildi** (Sözleşme korundu, SQLite fallback ve süreç içi rate-limit eklendi) |
+| **Backend & REST API** | Python, FastAPI, SQLAlchemy 2, Alembic, MySQL 8.4, Redis | `backend/` | **Çalışıyor & Test Edildi** (Sözleşme korundu; Redis kesintisinde giriş limiti kapalı başarısız olur (fail-closed)) |
 | **API Sözleşmesi** | OpenAPI 3.1 Sözleşmesi | `contract/openapi.json` | **Güncel & Birebir Uyumlu** |
 | **Web Yönetim Paneli** | React 19, TypeScript, Vite, Tailwind CSS | `web/` | **Çalışıyor & Test Edildi** (11/11 birim test geçti, 0 hata prodüksiyon derlemesi) |
 | **Android Mobil Uygulama** | Kotlin 2.1, Jetpack Compose, Material 3, Room (SQLite), Retrofit, WorkManager | `android/` | **Tam Kodlandı & Testleri Hazır** (Offline kuyruk, UUID Idempotency, Bloke lot engeli, `stock_movement_id` kaydı) |
