@@ -98,7 +98,9 @@ cd android
 
 ## 5. Cihaz ve Ağ Yapılandırması
 
-- **Android Emülatörü:** `http://10.0.2.2:8000/api/v1/` adresini kullanır.
-- **Fiziksel Cihaz:** USB ile bağlandıktan sonra `adb reverse tcp:8000 tcp:8000` komutu çalıştırılır; uygulama `http://127.0.0.1:8000/api/v1/` adresine bağlanır.
-- **Güvenlik Politikası:** Cleartext (düz HTTP) izni yalnızca debug derlemesinde `10.0.2.2` ve `localhost` için geçerlidir (`network_security_config.xml`). Release sürümünde kapatılmıştır.
-- **Demo Kullanıcısı:** `sales@avatar.demo` / `Avatar-Demo-2026!`
+- **Dinamik API Yapılandırması:** Uygulama açılışında Giriş Ekranındaki `⚙️ Sunucu: [URL]` butonu veya Ayarlar ekranından API sunucu adresi çalışma zamanında değiştirilebilir ve kalıcı olarak `SharedPreferences` üzerinde saklanır.
+- **Gerçek Telefon (Wi-Fi / LAN):** Telefon ve bilgisayar aynı Wi-Fi ağına bağlandıktan sonra bilgisayarın yerel IP adresi girilir (Ör: `http://192.168.1.2:8000/api/v1/`).
+- **Android Emülatörü:** Varsayılan olarak `http://10.0.2.2:8000/api/v1/` adresini kullanır (hazır çip ile tek dokunuşla seçilebilir).
+- **USB Kablolu Bağlantı:** USB ile bağlandıktan sonra `adb reverse tcp:8000 tcp:8000` komutu çalıştırılarak `http://localhost:8000/api/v1/` adresiyle doğrudan erişilebilir.
+- **Güvenlik ve Ağ İlkesi:** `network_security_config.xml` üzerinden yerel ağ IP'leri ve emülatör loopback adresleri için cleartext HTTP trafiğine izin verilmiştir.
+- **Demo Kullanıcısı:** `sales@avatar.demo` / `Avatar-Demo-2026!` (veya `satis@avatar.com` / `satis123`)

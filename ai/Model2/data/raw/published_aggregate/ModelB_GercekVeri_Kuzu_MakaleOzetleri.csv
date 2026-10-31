@@ -1,0 +1,4 @@
+﻿kaynak,hayvan_turu,parca_kategorisi,ortalama_agirlik_kg,standart_sapma_kg,orneklem_n,veri_duzeyi,not
+"Matos et al., AgriEngineering 2026",kuzu,boyun,0.54,0.17,45,makalede_raporlanan_ozet_istatistik,Yayın tablosundaki yarım karkas kesimi; tam hayvan parçası gibi doğrudan yorumlanmamalı.
+"Matos et al., AgriEngineering 2026",kuzu,omuz,1.2,0.26,45,makalede_raporlanan_ozet_istatistik,Yayın tablosundaki yarım karkas kesimi; tam hayvan parçası gibi doğrudan yorumlanmamalı.
+"Matos et al., AgriEngineering 2026",kuzu,but,,,45,makalede_raporlanan_ozet_istatistik,Makale metninde but önemli ticari kesim olarak ele alınıyor; burada güvenilir ortalama kg değeri çıkarılmadı.

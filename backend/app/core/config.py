@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     redis_url: SecretStr = SecretStr("redis://:change-me-local-only@localhost:6379/0")
     log_level: str = "INFO"
     jwt_secret_key: SecretStr = SecretStr("unsafe-local-placeholder-change-before-use")
+    ml_signing_secret: SecretStr | None = None
     access_token_minutes: int = 15
     refresh_token_days: int = 7
     cors_origins: str = "http://localhost:5173,http://localhost:3000"
@@ -28,6 +29,13 @@ class Settings(BaseSettings):
             secret = self.jwt_secret_key.get_secret_value()
             if (secret.startswith(("unsafe-", "local-dev-secret-change-me")) or len(secret) < 32):
                 raise RuntimeError("JWT_SECRET_KEY must be configured with at least 32 characters outside local.")
+            if self.ml_signing_secret is None:
+                raise RuntimeError("ML_SIGNING_SECRET must be configured outside local.")
+            ml_secret = self.ml_signing_secret.get_secret_value()
+            if (ml_secret.startswith(("unsafe-", "local-dev-secret-change-me")) or len(ml_secret) < 32):
+                raise RuntimeError("ML_SIGNING_SECRET must be configured with at least 32 characters outside local.")
+            if secret == ml_secret:
+                raise RuntimeError("ML_SIGNING_SECRET must not reuse JWT_SECRET_KEY outside local (Key Separation).")
             db_password = unquote(urlsplit(self.database_url).password or "")
             if not db_password or db_password in {"change-me", "change-me-local-only", "change-root-local-only"}:
                 raise RuntimeError("DATABASE_URL must not use a default password outside local.")

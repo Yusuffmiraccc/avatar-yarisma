@@ -109,8 +109,8 @@
       ],
       "scenario": "A: production-before; feature timing remains to be confirmed",
       "metrics": {
-        "mae": 12.167099905303589,
-        "rmse": 16.478843189867902,
+        "mae": 12.167099905303594,
+        "rmse": 16.478843189867906,
         "r2": 0.9710722802486345,
         "mean_baseline_mae": 83.10694375000001,
         "median_baseline_mae_test_median_descriptive": 83.08341499999999,
@@ -142,8 +142,8 @@
       ],
       "scenario": "A: production-before; feature timing remains to be confirmed",
       "metrics": {
-        "mae": 11.53898121904762,
-        "rmse": 15.519536441683998,
+        "mae": 11.538981219047622,
+        "rmse": 15.519536441684,
         "r2": 0.9743422688994895,
         "mean_baseline_mae": 83.10694375000001,
         "median_baseline_mae_test_median_descriptive": 83.08341499999999,
@@ -196,8 +196,8 @@
       ],
       "scenario": "B: loss rates are user-entered planning assumptions; timing not established by dataset",
       "metrics": {
-        "mae": 5.65349750937589,
-        "rmse": 7.832437949392807,
+        "mae": 5.653497509375892,
+        "rmse": 7.832437949392814,
         "r2": 0.9934648631683188,
         "mean_baseline_mae": 83.10694375000001,
         "median_baseline_mae_test_median_descriptive": 83.10694375000001,
@@ -229,12 +229,12 @@
       ],
       "scenario": "A: production-before features",
       "metrics": {
-        "mae": 49.87229789518655,
+        "mae": 49.872297895186556,
         "rmse": 61.223635943775854,
-        "r2": 0.10702942214335909,
+        "r2": 0.1070294221433592,
         "mean_baseline_mae": 51.67554149999998,
         "median_baseline_mae_test_median_descriptive": 51.571200000000005,
-        "improvement_over_mean_baseline_pct": 3.489549509245937,
+        "improvement_over_mean_baseline_pct": 3.489549509245926,
         "test_records": 200
       }
     },
@@ -262,12 +262,12 @@
       ],
       "scenario": "A: production-before features",
       "metrics": {
-        "mae": 51.09261811428574,
-        "rmse": 63.119823941813564,
-        "r2": 0.05085957333372293,
+        "mae": 51.09261811428576,
+        "rmse": 63.11982394181359,
+        "r2": 0.05085957333372215,
         "mean_baseline_mae": 51.67554149999998,
         "median_baseline_mae_test_median_descriptive": 51.571200000000005,
-        "improvement_over_mean_baseline_pct": 1.128045045670667,
+        "improvement_over_mean_baseline_pct": 1.1280450456706226,
         "test_records": 200
       }
     },
@@ -298,8 +298,8 @@
       "scenario": "B: drying and trimming losses supplied as planning assumptions; timing unverified",
       "metrics": {
         "mae": 12.848508927297766,
-        "rmse": 16.939171191779756,
-        "r2": 0.9316429632037054,
+        "rmse": 16.939171191779742,
+        "r2": 0.9316429632037055,
         "mean_baseline_mae": 51.67554149999998,
         "median_baseline_mae_test_median_descriptive": 51.571200000000005,
         "improvement_over_mean_baseline_pct": 75.13618908609256,
@@ -332,12 +332,12 @@
       ],
       "scenario": "B: drying and trimming losses supplied as planning assumptions; timing unverified",
       "metrics": {
-        "mae": 10.469691166666623,
-        "rmse": 14.240132668926103,
+        "mae": 10.469691166666628,
+        "rmse": 14.240132668926108,
         "r2": 0.9516911182179507,
         "mean_baseline_mae": 51.67554149999998,
         "median_baseline_mae_test_median_descriptive": 51.571200000000005,
-        "improvement_over_mean_baseline_pct": 79.7395617679853,
+        "improvement_over_mean_baseline_pct": 79.73956176798528,
         "test_records": 200
       }
     },
@@ -365,7 +365,7 @@
       ],
       "scenario": "A total-cost predictor; realized total cost is target only, never a feature",
       "metrics": {
-        "mae": 3911.049241912639,
+        "mae": 3911.04924191264,
         "rmse": 5316.7696321754765,
         "r2": 0.9964381225039843,
         "mean_baseline_mae": 76995.323475,
@@ -400,12 +400,12 @@
       "yield_model": "yield_random_forest_scenario_A",
       "scenario": "A; component-wise cost forecast is not supported by available pre-run measurements; estimates total cost then divides by predicted net output",
       "metrics": {
-        "mae": 53.540941574784654,
+        "mae": 53.54094157478464,
         "rmse": 67.06569975486298,
-        "r2": -0.0715188972143328,
+        "r2": -0.07151889721433258,
         "mean_baseline_mae": 51.67554149999998,
         "median_baseline_mae_test_median_descriptive": 51.571200000000005,
-        "improvement_over_mean_baseline_pct": -3.609831693364396,
+        "improvement_over_mean_baseline_pct": -3.6098316933643737,
         "test_records": 200
       },
       "invalid_nonpositive_yield_predictions": 0

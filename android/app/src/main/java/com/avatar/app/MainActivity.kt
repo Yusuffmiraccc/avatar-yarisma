@@ -54,8 +54,15 @@ class MainActivity : ComponentActivity() {
                 val customers by catalogRepo.customers.collectAsState(initial = emptyList())
                 val allSales by salesRepo.allSales.collectAsState(initial = emptyList())
 
+                var currentServerUrl by remember { mutableStateOf(app.apiClient.baseUrl) }
+
                 if (!isLoggedIn) {
                     LoginScreen(
+                        currentServerUrl = currentServerUrl,
+                        onServerUrlChange = { newUrl ->
+                            app.apiClient.updateBaseUrl(newUrl)
+                            currentServerUrl = app.apiClient.baseUrl
+                        },
                         onLoginSuccess = {
                             isLoggedIn = true
                             scope.launch { catalogRepo.syncCatalog() }
@@ -151,6 +158,11 @@ class MainActivity : ComponentActivity() {
                                     userEmail = authRepo.tokenManager.userEmail,
                                     userDisplayName = authRepo.tokenManager.userDisplayName,
                                     pendingSalesCount = allSales.count { it.sale.status == com.avatar.app.data.local.entity.SaleStatus.PENDING },
+                                    currentServerUrl = currentServerUrl,
+                                    onServerUrlChange = { newUrl ->
+                                        app.apiClient.updateBaseUrl(newUrl)
+                                        currentServerUrl = app.apiClient.baseUrl
+                                    },
                                     onLogoutClick = {
                                         authRepo.logout()
                                         isLoggedIn = false

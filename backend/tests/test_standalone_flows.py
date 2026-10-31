@@ -34,7 +34,10 @@ from app.services import (
     recall as recall_svc,
     stock as stock_svc,
     idempotency as idemp_svc,
+    traceability as trace_svc,
 )
+from app.models import MlPrediction, StockMovement
+from app.schemas.common import redact_cost_data
 from app.schemas.production import CompleteIn, OutputIn, ServiceCostIn, ProductionInputIn
 from app.schemas.butchering import ButcheringCompleteIn, ButcheringOutputIn, ButcheringInputIn, WasteIn
 from app.schemas.sales import SaleIn, SaleLineIn
@@ -59,11 +62,11 @@ def make_user(uid=1, role="ADMIN", perms=None):
 
 def test_ekp_production_and_stock_flow(db):
     user = make_user()
-    
+
     # 1. Tedarikçi ve Ürün Tanımları
     supplier = Supplier(code="SUP-OUT-01", name="Anadolu Dış Üretim", supplier_type="OUTSOURCED_PROCESSOR")
     db.add(supplier)
-    
+
     et = Product(code="RAW-ET-01", name="Dana Eti", product_type="RAW_MATERIAL", base_unit_code="KG")
     bah = Product(code="RAW-BAH-01", name="Baharat Karışımı", product_type="RAW_MATERIAL", base_unit_code="KG")
     bag = Product(code="RAW-BAG-01", name="Doğal Bağırsak", product_type="RAW_MATERIAL", base_unit_code="KG")
@@ -123,7 +126,7 @@ def test_ekp_production_and_stock_flow(db):
     # 100 * 9.70 (970.00) + 2 * 24.00 (48.00) + 5 * 11.60 (58.00) + 467.50 = 1543.50 €
     assert completed_order.total_cost == D("1543.5000")
     assert completed_order.actual_output_quantity == D("85.0000")
-    
+
     # EKP = 1543.50 / 85 = 18.1588235... -> 4 hane: 18.1588, gösterim: 18.16
     assert completed_order.unit_cost_ekp == D("18.1588")
     assert costing.display2(completed_order.unit_cost_ekp) == D("18.16")
@@ -146,7 +149,7 @@ def test_ekp_production_and_stock_flow(db):
 
 def test_lamb_butchering_weight_and_cost_distribution(db):
     user = make_user()
-    
+
     supplier = Supplier(code="SUP-MEAT-01", name="Karakaya Çiftliği", supplier_type="FARM")
     db.add(supplier)
 
@@ -267,7 +270,7 @@ def test_sales_traceability_and_recall_flow(db):
 
     def execute_sale():
         return 201, SaleResponse(sale_id=999, status="COMPLETED")
-    
+
     idem_key = str(uuid.uuid4())
     req_body = {"customer_id": customer_a.id, "lines": []}
     res1 = idemp_svc.run(db, scope="SALE_CREATE", key=idem_key, body=req_body, required=True, action=execute_sale)
@@ -394,3 +397,171 @@ def test_negative_quantity_receipt_rejected(db):
         )
     assert exc_info.value.status_code == 400
 
+
+def test_reference_scenario_full_traceability_and_multi_market_recall(db):
+    """Şartname Referans Senaryosu:
+    1. ET-2026-001 (100 kg), BAH-2026-001 (2 kg), BAG-2026-001 (5 kg) girişi
+    2. URT-2026-045 üretim emri (85 pk @ 5.50 € fason hizmet bedeli)
+    3. EKP hesaplama: 1.543,50 € / 85 = 18.1588 -> 18.16 €/pk mamul SUC-2026-045
+    4. Market A: 30 pk, Market B: 25 pk, Market C: 30 pk (Toplam: 85 pk sevk, bakiye: 0 pk)
+    5. İleriye izleme (forward): ET-2026-001 -> URT-2026-045 -> SUC-2026-045 -> Market A, B, C
+    6. Geriye izleme (backward): SUC-2026-045 -> URT-2026-045 -> ET-2026-001 vb.
+    7. Geri çağırma (recall): SUC-2026-045 bloke edilir (409 LOT_BLOCKED), etki simülasyonu Market A(30), B(25), C(30).
+    """
+    user = make_user()
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc)
+
+    # Tedarikçi ve Müşteriler
+    sup = Supplier(code="SUP-REF-01", name="Karakaya Besicilik", supplier_type="FARM")
+    mkt_a = Customer(code="MKT-A-REF", name="Market A", customer_type="MARKET")
+    mkt_b = Customer(code="MKT-B-REF", name="Market B", customer_type="MARKET")
+    mkt_c = Customer(code="MKT-C-REF", name="Market C", customer_type="MARKET")
+    db.add_all([sup, mkt_a, mkt_b, mkt_c])
+
+    # Ürünler
+    et = Product(code="RAW-ET-REF", name="Dana Eti", product_type="RAW_MATERIAL", base_unit_code="KG")
+    bah = Product(code="RAW-BAH-REF", name="Baharat", product_type="RAW_MATERIAL", base_unit_code="KG")
+    bag = Product(code="RAW-BAG-REF", name="Bağırsak", product_type="RAW_MATERIAL", base_unit_code="KG")
+    sucuk = Product(code="FIN-SUC-REF", name="Kangal Sucuk", product_type="FINISHED_GOOD", base_unit_code="PACK")
+    db.add_all([et, bah, bag, sucuk])
+    db.flush()
+
+    # Liste satış fiyatı: 26.00 €
+    db.add(ProductPrice(product_id=sucuk.id, price_type="SALE", amount=D("26.00"), currency_code="EUR", unit_code="PACK", valid_from=now))
+    db.flush()
+
+    # 1. Hammadde Alış Girişleri
+    lot_et, bal_et = lots_svc.receive(db, lot_code="ET-2026-001-REF", product_id=et.id, supplier_id=sup.id,
+                                      quantity=D("100"), unit_code="KG", unit_cost=D("9.70"),
+                                      received_at=None, expiry_date=None, user_id=user.id, request_id="R1")
+    lot_bah, bal_bah = lots_svc.receive(db, lot_code="BAH-2026-001-REF", product_id=bah.id, supplier_id=sup.id,
+                                        quantity=D("2"), unit_code="KG", unit_cost=D("24.00"),
+                                        received_at=None, expiry_date=None, user_id=user.id, request_id="R2")
+    lot_bag, bal_bag = lots_svc.receive(db, lot_code="BAG-2026-001-REF", product_id=bag.id, supplier_id=sup.id,
+                                        quantity=D("5"), unit_code="KG", unit_cost=D("11.60"),
+                                        received_at=None, expiry_date=None, user_id=user.id, request_id="R3")
+    db.flush()
+
+    # 2. Üretim Emri (URT-2026-045-REF)
+    order = ProductionOrder(order_code="URT-2026-045-REF", production_type="OUTSOURCED",
+                            supplier_id=sup.id, status="DRAFT", created_by=user.id)
+    db.add(order)
+    db.flush()
+
+    prod_svc.add_input(db, order, ProductionInputIn(lot_id=lot_et.id, quantity=D("100"), unit_code="KG"))
+    prod_svc.add_input(db, order, ProductionInputIn(lot_id=lot_bah.id, quantity=D("2"), unit_code="KG"))
+    prod_svc.add_input(db, order, ProductionInputIn(lot_id=lot_bag.id, quantity=D("5"), unit_code="KG"))
+    prod_svc.add_service_cost(db, order, ServiceCostIn(description="Fason üretim faturası", quantity=D("85"), unit_price=D("5.50")))
+    prod_svc.start(db, order, user_id=user.id)
+
+    # 3. Üretimi Tamamla (85 paket SUC-2026-045-REF)
+    completed_order = prod_svc.complete(
+        db, order.id,
+        CompleteIn(outputs=[OutputIn(product_id=sucuk.id, lot_code="SUC-2026-045-REF", quantity=D("85"), unit_code="PACK")]),
+        user_id=user.id, request_id="R4"
+    )
+    assert completed_order.total_cost == D("1543.5000")
+    assert completed_order.unit_cost_ekp == D("18.1588")
+
+    sucuk_lot = db.query(Lot).filter_by(lot_code="SUC-2026-045-REF").first()
+    sucuk_bal = db.query(InventoryBalance).filter_by(lot_id=sucuk_lot.id).first()
+    assert sucuk_bal.on_hand_quantity == D("85.0000")
+
+    # 4. Satış ve Sevkiyatlar: Market A (30 pk), Market B (25 pk), Market C (30 pk) = 85 pk
+    sale_a = sales_svc.create_sale(db, SaleIn(customer_id=mkt_a.id, lines=[SaleLineIn(lot_id=sucuk_lot.id, quantity=D("30"), unit_code="PACK")]), user=user, request_id="S-A")
+    sale_b = sales_svc.create_sale(db, SaleIn(customer_id=mkt_b.id, lines=[SaleLineIn(lot_id=sucuk_lot.id, quantity=D("25"), unit_code="PACK")]), user=user, request_id="S-B")
+    sale_c = sales_svc.create_sale(db, SaleIn(customer_id=mkt_c.id, lines=[SaleLineIn(lot_id=sucuk_lot.id, quantity=D("30"), unit_code="PACK")]), user=user, request_id="S-C")
+
+    db.refresh(sucuk_bal)
+    assert sucuk_bal.on_hand_quantity == D("0.0000")
+
+    # 5. İleriye İzleme (Forward Trace): Hammadde lotundan başla
+    fwd = trace_svc.forward(db, [lot_et.id])
+    assert any(n.lot_code == "SUC-2026-045-REF" for n in fwd.lots)
+    cust_map = {c.customer_code: c.total_quantity for c in fwd.customers}
+    assert cust_map.get("MKT-A-REF") == D("30.0000")
+    assert cust_map.get("MKT-B-REF") == D("25.0000")
+    assert cust_map.get("MKT-C-REF") == D("30.0000")
+    assert fwd.remaining_stock_total == D("0.0000")
+
+    # 6. Geriye İzleme (Backward Trace): Mamul lotundan başla
+    bwd = trace_svc.backward(db, sucuk_lot.id)
+    assert bwd.target_lot_code == "SUC-2026-045-REF"
+    ancestor_codes = {n.lot_code for n in bwd.lots}
+    assert "ET-2026-001-REF" in ancestor_codes
+    assert "BAH-2026-001-REF" in ancestor_codes
+    assert "BAG-2026-001-REF" in ancestor_codes
+
+    # 7. Geri Çağırma (Recall) ve Bloke Satış Engeli
+    recall_obj = recall_svc.create(db, recall_code="REC-REF-001", reason_code="MICROBIOLOGICAL",
+                                   reason_text="Hammadde kaynaklı kontaminasyon", lot_codes=["SUC-2026-045-REF"],
+                                   user_id=user.id)
+    recall_svc.activate(db, recall_obj.id, user_id=user.id, request_id="ACT-01")
+
+    # Bloke lotun tekrar satılması 409 LOT_BLOCKED ile engellenmeli
+    with pytest.raises(AppError) as exc_info:
+        sales_svc.create_sale(db, SaleIn(customer_id=mkt_a.id, lines=[SaleLineIn(lot_id=sucuk_lot.id, quantity=D("1"), unit_code="PACK")]), user=user, request_id="BLOCK-TEST")
+    assert exc_info.value.status_code == 409
+    assert exc_info.value.code == "LOT_BLOCKED"
+
+    # Simülasyonda 3 market de görünmeli
+    sim = recall_svc.simulate(db, recall_obj)
+    sim_custs = {c.customer_code: c.total_quantity for c in sim.customers}
+    assert sim_custs.get("MKT-A-REF") == D("30.0000")
+    assert sim_custs.get("MKT-B-REF") == D("25.0000")
+    assert sim_custs.get("MKT-C-REF") == D("30.0000")
+
+
+def test_unauthorized_user_cost_redaction():
+    """Güvenlik Doğrulaması: costs:read izni olmayan kullanıcılara maliyet ve kâr verileri maskelenmelidir."""
+    payload = {
+        "id": 101,
+        "lot_code": "SUC-MASK-001",
+        "unit_cost": "18.1588",
+        "total_cost": "1543.5000",
+        "unit_cost_ekp": "18.16",
+        "gross_profit_per_unit": "7.84",
+        "status": "COMPLETED",
+        "quantity": "85.0"
+    }
+    redacted = redact_cost_data(payload)
+    assert "unit_cost" not in redacted
+    assert "total_cost" not in redacted
+    assert "unit_cost_ekp" not in redacted
+    assert "gross_profit_per_unit" not in redacted
+    assert redacted["id"] == 101
+    assert redacted["lot_code"] == "SUC-MASK-001"
+    assert redacted["status"] == "COMPLETED"
+    assert redacted["quantity"] == "85.0"
+
+
+def test_ml_predictions_isolated_from_financial_ledgers(db):
+    """Yapay Zekâ İzolasyon Doğrulaması:
+    ML tahminleri bağımsız ml_predictions tablosunda saklanır; stok ve muhasebe kayıtlarını değiştirmez.
+    """
+    user = make_user()
+    initial_movement_count = db.query(StockMovement).count()
+
+    pred = MlPrediction(
+        prediction_type="YIELD_AND_EKP",
+        model_version="ridge_v1.0.0",
+        status="ACTIVE",
+        input_reference_type="PRODUCTION_ORDER",
+        input_reference_id=45,
+        predicted_value=D("85.000000"),
+        predicted_cost=D("18.1600"),
+        baseline_value=D("82.000000"),
+        baseline_cost=D("18.8200"),
+        metric_name="MAE",
+        error_value=D("0.297800"),
+        limitations_note="Sentetik veriyle eğitilmiştir (is_demo=True); muhasebe EKP değerinin yerine geçmez.",
+        created_by=user.id
+    )
+    db.add(pred)
+    db.flush()
+
+    assert pred.id is not None
+    # Stok hareketleri veya maliyet defterine hiçbir kayıt yazılmamış olmalı
+    final_movement_count = db.query(StockMovement).count()
+    assert initial_movement_count == final_movement_count

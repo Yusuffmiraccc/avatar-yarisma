@@ -16,9 +16,13 @@ fun SettingsScreen(
     userEmail: String?,
     userDisplayName: String?,
     pendingSalesCount: Int,
+    currentServerUrl: String = "http://10.0.2.2:8000/api/v1/",
+    onServerUrlChange: ((String) -> Unit)? = null,
     onLogoutClick: () -> Unit
 ) {
     var showLogoutConfirm by remember { mutableStateOf(false) }
+    var showServerDialog by remember { mutableStateOf(false) }
+    var tempUrl by remember(currentServerUrl) { mutableStateOf(currentServerUrl) }
 
     Column(
         modifier = Modifier
@@ -53,10 +57,63 @@ fun SettingsScreen(
             Column(modifier = Modifier.padding(14.dp)) {
                 Text("Ağ Yapılandırması", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
                 Spacer(modifier = Modifier.height(6.dp))
-                Text("Varsayılan Adres: http://10.0.2.2:8000/api/v1/", fontSize = 13.sp)
-                Text("Fiziksel Cihaz İçin: adb reverse tcp:8000 tcp:8000", fontSize = 12.sp, color = Color.Gray)
-                Text("Güvenlik: Yalnızca debug modda loopback HTTP açıktır; prodüksiyonda cleartext kapalıdır.", fontSize = 11.sp, color = Color.DarkGray, modifier = Modifier.padding(top = 4.dp))
+                Text("Aktif Sunucu Adresi: $currentServerUrl", fontSize = 13.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
+                Text("Gerçek telefonda yerel PC IP'si (ör: http://192.168.1.50:8000/api/v1/) kullanılmalıdır.", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(top = 2.dp))
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = { showServerDialog = true },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Sunucu Adresini Değiştir")
+                }
             }
+        }
+
+        if (showServerDialog) {
+            AlertDialog(
+                onDismissRequest = { showServerDialog = false },
+                title = { Text("Sunucu API Adresi") },
+                text = {
+                    Column {
+                        Text(
+                            "Backend sunucusunun IP veya alan adını girin (ör: http://192.168.1.50:8000/api/v1/):",
+                            fontSize = 12.sp
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = tempUrl,
+                            onValueChange = { tempUrl = it },
+                            label = { Text("API Base URL") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            SuggestionChip(
+                                onClick = { tempUrl = "http://10.0.2.2:8000/api/v1/" },
+                                label = { Text("Emülatör") }
+                            )
+                            SuggestionChip(
+                                onClick = { tempUrl = "http://localhost:8000/api/v1/" },
+                                label = { Text("USB / Local") }
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(onClick = {
+                        onServerUrlChange?.invoke(tempUrl)
+                        showServerDialog = false
+                    }) {
+                        Text("Kaydet")
+                    }
+                },
+                dismissButton = {
+                    OutlinedButton(onClick = { showServerDialog = false }) {
+                        Text("İptal")
+                    }
+                }
+            )
         }
 
         Spacer(modifier = Modifier.height(24.dp))

@@ -214,29 +214,46 @@ def predict_butchering(art: dict, animal_type: str, input_weight: float) -> dict
     return {"parts": parts, "used_model": used_model, "animal_type_known": known}
 
 
+def _get_signing_key() -> bytes:
+    """Retrieve dedicated ML signing key; strictly decoupled from JWT session tokens."""
+    settings = get_settings()
+    secret = settings.ml_signing_secret
+    if secret is None:
+        raise ValueError("ML_SIGNING_SECRET is not configured; model signing and verification are disabled")
+    val = secret.get_secret_value().encode("utf-8")
+    if not val:
+        raise ValueError("ML_SIGNING_SECRET cannot be empty")
+    return val
+
+
+def _sign(path: str | Path, key: bytes | None = None) -> str:
+    k = key if key is not None else _get_signing_key()
+    return hmac.new(k, Path(path).read_bytes(), hashlib.sha256).hexdigest()
+
+
+def load(path: str) -> dict:
+    """joblib/pickle runs code on load, so verify the HMAC written by save() first."""
+    sig_file = Path(f"{path}.sig")
+    if not sig_file.exists():
+        raise ValueError("Model artifact signature is missing")
+    expected_sig = _sign(path)
+    actual_sig = sig_file.read_text().strip()
+    if not hmac.compare_digest(actual_sig, expected_sig):
+        raise ValueError("Model artifact signature is missing or invalid")
+    return joblib.load(path)
+
+
 def save(art: dict, path: str) -> None:
+    key = _get_signing_key()
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
     fd, temp_path = tempfile.mkstemp(prefix=f".{target.name}.", suffix=".tmp", dir=target.parent)
     os.close(fd)
     try:
         joblib.dump(art, temp_path)
-        sig = _sign(temp_path)
+        sig = _sign(temp_path, key=key)
         os.replace(temp_path, target)
         Path(f"{target}.sig").write_text(sig)
     finally:
         if os.path.exists(temp_path):
             os.unlink(temp_path)
-
-
-def _sign(path: str | Path) -> str:
-    key = get_settings().jwt_secret_key.get_secret_value().encode()
-    return hmac.new(key, Path(path).read_bytes(), hashlib.sha256).hexdigest()
-
-
-def load(path: str) -> dict:
-    """joblib/pickle runs code on load, so verify the HMAC written by save() first."""
-    sig_file = Path(f"{path}.sig")
-    if not sig_file.exists() or not hmac.compare_digest(sig_file.read_text().strip(), _sign(path)):
-        raise ValueError("Model artifact signature is missing or invalid")
-    return joblib.load(path)

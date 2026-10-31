@@ -1,0 +1,4 @@
+model,MAE_kg_tum_hedefler,RMSE_kg_tum_hedefler,R2_tum_hedefler,yorum
+baseline_species_mean_ratio,1.828286529801059,3.4430829545706048,0.902743656847992,Sentetik test holdout; gerçek saha başarısı değildir.
+ridge,1.8438897390308315,3.455626189076674,0.902165795635734,Sentetik test holdout; gerçek saha başarısı değildir.
+random_forest,1.9411793651829687,3.689998999665063,0.8941909387790297,Sentetik test holdout; gerçek saha başarısı değildir.

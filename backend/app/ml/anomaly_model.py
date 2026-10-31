@@ -17,6 +17,8 @@ def isolation_outliers(x: np.ndarray, contamination: float = CONTAMINATION, seed
     n = len(x)
     if n < MIN_SAMPLES:
         return np.zeros(n, bool), np.zeros(n)
+    if not np.isfinite(x).all():
+        x = np.nan_to_num(x, nan=0.0, posinf=0.0, neginf=0.0)
     sd = x.std(axis=0)
     xs = (x - x.mean(axis=0)) / np.where(sd > 0, sd, 1.0)
     model = IsolationForest(n_estimators=200, contamination=contamination, random_state=seed).fit(xs)

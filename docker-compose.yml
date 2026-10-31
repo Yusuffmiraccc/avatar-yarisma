@@ -66,12 +66,19 @@ services:
       DATABASE_URL: mysql+pymysql://avatar:${MYSQL_PASSWORD:-change-me-local-only}@mysql:3306/avatar_db?charset=utf8mb4
       REDIS_URL: redis://:${REDIS_PASSWORD:-avatar-test-only}@redis:6379/0
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-local-dev-secret-change-me-0123456789abcdef}
+      ML_SIGNING_SECRET: ${ML_SIGNING_SECRET:-local-ml-signing-secret-0123456789abcdef}
       ENVIRONMENT: ${ENVIRONMENT:-local}
       ML_DIR: /srv/ml_artifacts
     ports:
-      - "127.0.0.1:8000:8000"
+      - ":8000:8000"
     volumes:
       - avatar_ml:/srv/ml_artifacts
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=2).read()"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
 
   web:
     build:
@@ -79,9 +86,45 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     ports:
       - "127.0.0.1:5173:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  demo-seed:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: "no"
+    depends_on:
+      api:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: mysql+pymysql://avatar:${MYSQL_PASSWORD:-change-me-local-only}@mysql:3306/avatar_db?charset=utf8mb4
+      REDIS_URL: redis://:${REDIS_PASSWORD:-avatar-test-only}@redis:6379/0
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-local-dev-secret-change-me-0123456789abcdef}
+      ML_SIGNING_SECRET: ${ML_SIGNING_SECRET:-local-ml-signing-secret-0123456789abcdef}
+      ENVIRONMENT: ${ENVIRONMENT:-local}
+      ENABLE_DEMO_SEED: ${ENABLE_DEMO_SEED:-true}
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        if [ "$$ENVIRONMENT" = "local" ] && [ "$$ENABLE_DEMO_SEED" = "true" ]; then
+          echo "Starting idempotent demo seed..."
+          python -m scripts.seed_demo
+        else
+          echo "Demo seed is disabled outside local/demo environment."
+        fi
 
 volumes:
   avatar_mysql_data:
