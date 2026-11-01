@@ -7,27 +7,9 @@ TEST_ROOT_URL_DEFAULT = "mysql+pymysql://root:change-root-local-only@localhost:3
 ROOT_URL = os.environ.get("TEST_ROOT_URL", TEST_ROOT_URL_DEFAULT)
 TEST_DB = "avatar_test"
 
-# If DATABASE_URL is not already set by caller, determine target
+# Testler yalnızca MySQL ile çalışır (docker compose up -d mysql); URL dışarıdan verilmediyse test DB'sine bağlanır.
 if "DATABASE_URL" not in os.environ:
-    root_url = os.environ.get("TEST_ROOT_URL")
-    if root_url and "sqlite" in root_url:
-        os.environ["DATABASE_URL"] = root_url
-    elif root_url:
-        os.environ["DATABASE_URL"] = root_url.replace("/?", f"/{TEST_DB}?")
-    else:
-        # Auto-detect if MySQL on port 3307 is reachable
-        import socket
-        can_connect = False
-        try:
-            s = socket.create_connection(("localhost", 3307), timeout=0.3)
-            s.close()
-            can_connect = True
-        except Exception:
-            can_connect = False
-        if can_connect:
-            os.environ["DATABASE_URL"] = TEST_ROOT_URL_DEFAULT.replace("/?", f"/{TEST_DB}?")
-        else:
-            os.environ["DATABASE_URL"] = "sqlite:///./avatar_test.db"
+    os.environ["DATABASE_URL"] = ROOT_URL.replace("/?", f"/{TEST_DB}?")
 
 os.environ["JWT_SECRET_KEY"] = "test-secret-key-0123456789abcdef0123456789"
 os.environ["ML_SIGNING_SECRET"] = "test-ml-signing-secret-0123456789abcdef0123456789"
