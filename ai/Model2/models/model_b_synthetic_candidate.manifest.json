@@ -1,7 +1,7 @@
 {
   "manifest_version": 1,
   "artifact_filename": "model_b_synthetic_candidate.joblib",
-  "artifact_sha256": "31e41871272b6546a3f077c191d7b3da0dab37c5b21607e90f248102ae67769a",
+  "artifact_sha256": "9156d2f8c35c75d1750062367ae39240186a45b471d4048a3ff0ead618503250",
   "model_version": "model-b-ridge-20261024-synthetic-v1",
   "data_version": "model-b-synthetic-v1",
   "source_type": "synthetic",

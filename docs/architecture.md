@@ -95,3 +95,28 @@ flowchart TD
 - **Argon2id Parola Koruması:** Demo parolası dahil tüm parolalar Argon2id algoritmasıyla hash'lenerek saklanır.
 - **JWT & Token Rotation:** 15 dakikalık access token, 7 günlük refresh token; refresh reuse anında tespit edilerek oturum ailesi iptal edilir.
 - **Yapay Zekâ İzolasyonu:** ML modelleri ve tahminleri (`ml_predictions`) stok defterlerinden ve muhasebe kayıtlarından tamamen izoledir.
+
+---
+
+## 4. Makine Öğrenmesi (ML) Servis ve Dağıtım Mimarisi
+
+### 4.1 Çift Katmanlı ML Servis Modeli
+1. **Entegre Backend ML Katmanı (`backend/app/ml/`):**
+   - Ana FastAPI uygulaması (`avatar-api-1`, Port 8000) ile doğrudan sunulur.
+   - Web yönetim paneli ve mobil Android uygulaması tarafından tüketilen `/api/v1/ai/` uç noktalarını yönetir.
+   - Model artefaktları (`production_yield.joblib`, `butchering_output.joblib`), Docker Compose tarafından kalıcı adlandırılmış hacim olan `avatar_ml` (`/srv/ml_artifacts`) üzerinde tutulur.
+   - Yeniden eğitim (`POST /api/v1/ai/models/train`), süreçler ve iş parçacıkları arası dosya kilidi (`.training.lock`) ile atomik olarak korunur.
+
+2. **Bağımsız Model 2 Mikroservis Katmanı (`ai/Model2/`):**
+   - Port 8002 üzerinde çalışan izole FastAPI mikroservisidir (`avatar-model2-api`).
+   - Karkas parçalama operasyonlarının bağımsız denetimi (`model_b_audit.sqlite3`) ve gerçekleşen tartım kayıtları (`POST /v1/actual/carcass-cuts`) için kullanılır.
+   - Sadece doğrulanmış `model_b_production.joblib` ve buna eşleşen `source_type=measured` manifest mevcutsa tahmin üretir; aksi takdirde **HTTP 503** ile fail-closed yanıt döner.
+
+### 4.2 Kriptografik İzolasyon ve Bütünlük (Key Separation)
+- **Anahtar Ayrımı:** Model artefaktları SHA-256 HMAC ile imzalanır (`.sig` dosyaları). İmzalama anahtarı `ML_SIGNING_SECRET` olup, kullanıcı oturum anahtarı olan `JWT_SECRET_KEY`'den tamamen bağımsızdır.
+- **Yükleme Öncesi Doğrulama:** `modeling.load()` fonksiyonu dosyayı deserialize etmeden (pickle çalıştırmadan) önce imzasını bayt düzeyinde doğrular; imzasız veya kurcalanmış artefaktlar sisteme yüklenmez.
+
+### 4.3 Dürüstlük ve Ayrım Kuralları
+- **Model 1 (Üretim & EKP):** Karar desteği seviyesindedir. API yanıtında `limitations_note` ile sentetik geçmiş verisi olduğu belirtilir; muhasebe defterlerine müdahale edemez.
+- **Model 2 (Karkas Parçalama):** Gerçek saha ölçümleri (`data/raw/measured/`) tamamlanana kadar sentetik aday (`model_b_synthetic_candidate.joblib`) üretim tahmini için kullanılamaz; sahte tahmin üretilmez.
+

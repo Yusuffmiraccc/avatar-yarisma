@@ -125,6 +125,24 @@ adb reverse tcp:8000 tcp:8000
 - Satış onayında yerel `client_uuid` üretilir; `Idempotency-Key` olarak sunucuya iletilir; ağ kesintilerinde mükerrer satış oluşmaz.
 - Satış satırında lot, miktar, sabit liste fiyatı ve sunucudan dönen `stock_movement_id` kalıcı olarak saklanır.
 
+### 3.5 Makine Öğrenmesi (Model 1 & Model 2) ve MLOps Entegrasyonu
+
+Sistem iki adet zorunlu makine öğrenmesi modeline sahiptir:
+- **Model 1 (Üretim Verimi ve EKP):** Üretim emrinde kullanılacak hammadde kütleleri ve maliyet bileşenlerinden çıktı paket miktarını ve birim EKP'yi tahmin eder.
+- **Model 2 (Karkas Parçalama):** Hayvan türü ve karkas ağırlığından parçalama çıktılarını (8 kategori) tahmin eder.
+
+| Alan | Model 1 (Üretim Verimi & EKP) | Model 2 (Karkas Parçalama) |
+|---|---|---|
+| **Eğitim Pipeline'ı** | `ai/Model1/training/train_production.py` & `backend/app/ml/service.py:train_all` (Gradient Boosting, 5-Fold CV) | `ai/Model2/training/train_model_b.py` (Ridge / Random Forest, Stratified Split) |
+| **Veri Kaynağı** | `sucuk_uretim_1000_simule_parti.csv` (1.000 simüle parti) | `ModelB_*_sentetik.csv` (1.200 simüle karkas: 840 train / 180 val / 180 test) |
+| **Artefakt Konumu** | `backend/ml_artifacts/production_yield.joblib` & Docker `avatar_ml:/srv/ml_artifacts/` | `ai/Model2/models/model_b_synthetic_candidate.joblib` (Aday) & `backend/ml_artifacts/butchering_output.joblib` |
+| **Artefakt Yükleme** | `modeling.load()` (HMAC SHA-256 `.sig` doğrulaması ile tam korumalı) | `model_b_artifact.py` (SHA-256 hash doğrulamalı) |
+| **Backend Bağlantısı** | `backend/app/api/v1/ai.py` (Port 8000, tam entegre) | `ai/Model2/app/main.py` (Port 8002 mikroservis) ve `backend/app/api/v1/ai.py` (Port 8000 entegre) |
+| **Tahmin Uç Noktası** | `POST /api/v1/ai/production-yield/predict` (HTTP 200, canlı çalışıyor) | `POST /v1/predict/carcass-cuts` (Üretim artefaktı yokken güvenli HTTP 503 fail-closed) |
+| **Üretime Hazır mı?** | **Karar Desteği Seviyesinde Hazır** (Sentetik sınırlılık notuyla karar desteği sağlar; muhasebe EKP yerine geçmez) | **Üretime Hazır Değil (Fail-Closed Korunuyor)** (Gerçek saha ölçümü `data/raw/measured/` gelene kadar 503 verir) |
+| **Kalan Eksikler** | Gerçek fabrika üretim ve arıza kayıtlarıyla modelin yeniden eğitilmesi | Gerçek kesimhane ölçüm kayıtlarının toplanarak saha modelinin devreye alınması |
+
+
 ---
 
 ## 4. Dokümantasyon İndeksi (`docs/`)

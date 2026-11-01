@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse
 from app.config import API_KEY, APP_ENV, MODEL_B_AUDIT_DB, MODEL_B_DIR
 from app.model_b_artifact import (
     load_production_bundle,
+    load_synthetic_candidate_bundle,
     read_production_manifest,
     read_synthetic_candidate_manifest,
 )
@@ -29,6 +30,7 @@ from app.schemas import (
     MODEL_B_TARGETS,
     CarcassCutsActualRequest,
     CarcassCutsActualResponse,
+    CarcassCutsExperimentalPredictionResponse,
     CarcassCutsPredictionRequest,
     CarcassCutsPredictionResponse,
     Model2StatusResponse,
@@ -38,7 +40,8 @@ from app.schemas import (
 
 MODEL_NOTICE = (
     "Saha doğrulamalı measured üretim artefaktı mevcut değil. "
-    "Sentetik aday tahmin için yüklenmez."
+    "Sentetik aday üretim tahmin uç noktasında (predict/carcass-cuts) yüklenmez. "
+    "Pilot/deneysel testler için /v1/predict/carcass-cuts/experimental kullanılabilir."
 )
 
 app = FastAPI(
@@ -127,6 +130,7 @@ def predict_carcass_cuts(
             species=payload.hayvan_turu,
             carcass_kg=payload.karkas_agirligi_kg,
             predicted_cuts=prediction,
+            is_experimental=False,
         )
         return CarcassCutsPredictionResponse(
             predicted_cuts_kg=prediction,
@@ -144,6 +148,59 @@ def predict_carcass_cuts(
         raise
     except Exception as exc:
         raise HTTPException(status_code=503, detail="Model B artefaktı yüklenemedi veya şeması geçersiz.") from exc
+
+
+@app.post("/v1/predict/carcass-cuts/experimental", response_model=CarcassCutsExperimentalPredictionResponse)
+def predict_carcass_cuts_experimental(
+    payload: CarcassCutsPredictionRequest,
+    x_api_key: str | None = Header(default=None),
+):
+    """Experimental pilot endpoint using synthetic candidate model; explicitly marked not production ready."""
+    _authorize(x_api_key)
+    bundle = load_synthetic_candidate_bundle(MODEL_B_DIR)
+    if bundle is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Model B sentetik pilot aday artefaktı kullanıma hazır değil veya doğrulanmadı.",
+        )
+
+    try:
+        frame = pd.DataFrame([payload.model_dump()], columns=bundle["feature_columns"])
+        raw = np.asarray(bundle["model"].predict(frame), dtype=float)
+        if raw.ndim == 2 and raw.shape[0] == 1:
+            raw = raw[0]
+        if raw.ndim != 1 or raw.shape[0] != len(MODEL_B_TARGETS) or not np.isfinite(raw).all():
+            raise ValueError("invalid prediction shape or values")
+
+        prediction = {
+            target: round(max(0.0, float(value)), 3)
+            for target, value in zip(MODEL_B_TARGETS, raw, strict=True)
+        }
+        prediction_id, created_at = save_prediction(
+            MODEL_B_AUDIT_DB,
+            bundle=bundle,
+            species=payload.hayvan_turu,
+            carcass_kg=payload.karkas_agirligi_kg,
+            predicted_cuts=prediction,
+            is_experimental=True,
+        )
+        return CarcassCutsExperimentalPredictionResponse(
+            predicted_cuts_kg=prediction,
+            prediction_id=prediction_id,
+            prediction_created_at_utc=created_at,
+            model_version=bundle["model_version"],
+            data_version=bundle["data_version"],
+            source_type="synthetic",
+            production_ready=False,
+            experimental=True,
+            model_notice="DENEYSEL PİLOT TAHMİNİ: Saha ölçüm verisi toplanana kadar yalnızca test/pilot amaçlıdır. Ticari veya hukuki kararlar için üretimde kullanılamaz.",
+        )
+    except sqlite3.Error as exc:
+        raise HTTPException(status_code=503, detail="Model B audit kayıt deposu kullanılamıyor.") from exc
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="Model B sentetik artefaktı yüklenemedi veya tahmin hatası.") from exc
 
 
 @app.post("/v1/actual/carcass-cuts", response_model=CarcassCutsActualResponse)
