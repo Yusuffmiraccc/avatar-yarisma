@@ -55,7 +55,7 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 
 # 2. Bağımlılıkları kurun
-pip install -r requirements.txt
+pip install -e ".[dev]"
 
 # 3. Ortam dosyasını kopyalayın
 Copy-Item .env.example .env
@@ -134,7 +134,9 @@ Tüm kullanıcı hesaplarının parolası: **`Avatar-Demo-2026!`**
 
 Backend testlerinin tamamını çalıştırmak için:
 ```powershell
-backend\.venv\Scripts\python.exe -m pytest backend/tests/test_costing.py backend/tests/test_standalone_flows.py -v
+docker compose up -d mysql
+docker compose -f backend/docker-compose.test-redis.yml up -d
+cd backend; .\.venv\Scripts\python.exe -m pytest -q
 ```
 
 Web testlerini çalıştırmak için:
