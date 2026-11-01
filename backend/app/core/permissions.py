@@ -1,4 +1,4 @@
-"""Rol → izin matrisi (deny-by-default). Kaynak: docs/SOZLESME.md."""
+"""Rol → izin matrisi (deny-by-default). Rol ve izin kararları bu modülde tanımlıdır."""
 
 ALL_PERMISSIONS = frozenset(
     {

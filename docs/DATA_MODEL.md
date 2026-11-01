@@ -1,6 +1,6 @@
 # Veri Modeli
 
-Bu belge `backend/app/models` ORM metadata'sından üretilir (`python -m scripts.gen_docs`). İş kuralları için `SOZLESME.md`.
+Bu belge `backend/app/models` ORM metadata'sından üretilir (`python -m scripts.gen_docs`). İş kuralları için `README.md` ve `AI_RAPORU.md`.
 
 Toplam tablo: **37**
 
