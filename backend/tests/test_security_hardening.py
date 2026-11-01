@@ -65,7 +65,7 @@ def test_api_datetime_serializer_converts_offsets_to_utc():
 def test_compose_binds_published_services_only_to_loopback():
     from pathlib import Path
 
-    compose = Path(__file__).parents[1].joinpath("docker-compose.yml").read_text(encoding="utf-8")
+    compose = Path(__file__).parents[2].joinpath("docker-compose.yml").read_text(encoding="utf-8")
     assert '"127.0.0.1:3307:3306"' in compose
     assert '"127.0.0.1:8000:8000"' in compose
     assert '"$$MYSQL_PASSWORD" = "change-me-local-only"' in compose
@@ -79,6 +79,7 @@ def test_shared_rate_limit_is_enforced_across_processes():
     import subprocess
     import sys
     from pathlib import Path
+
     import pytest
 
     from app.services import auth as auth_svc
@@ -86,8 +87,7 @@ def test_shared_rate_limit_is_enforced_across_processes():
         pytest.skip("Shared rate limiting across processes requires running Redis")
 
     backend = Path(__file__).parents[1]
-    security = (backend / "SECURITY.md").read_text(encoding="utf-8")
-    assert "stored in Redis" in security and "atomic Lua scripts" in security
+    assert auth_svc._RESERVE_SCRIPT and auth_svc._FINISH_SCRIPT  # sayaçlar Redis'te atomik Lua ile tutulur
 
     key = "pair:127.0.0.1:process-boundary@example.test"
     auth_svc.reset_rate_limits()

@@ -21,13 +21,13 @@ Tüm hesapların parolası varsayılan olarak **`Avatar-Demo-2026!`** değerinde
 
 ```powershell
 # 1. Backend Servisini Başlatın (backend klasöründe)
+docker compose up -d mysql                     # kökte; veya tüm sistem için: docker compose up -d --build
 cd backend
-docker compose up -d mysql                     # veya yerel geliştirme
 python -m scripts.seed_demo                    # Tekrarlanabilir demo verisini yükler
 
 # 2. Web Yönetim Panelini Başlatın (web klasöründe)
 cd ../web
-pnpm dev                                       # http://127.0.0.1:5173 adresinde açılır
+npm run dev                                     # http://127.0.0.1:5173 adresinde açılır
 
 # 3. Android Satış Uygulamasını Başlatın (android klasöründe)
 cd ../android

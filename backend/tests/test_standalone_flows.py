@@ -14,34 +14,56 @@ veritabanı transaction'ları, domain modelleri ve servis katmanı üzerinden
 9. Çift yönlü lot izlenebilirliği (ET-2026-001 -> URT-2026-045 -> SUC-2026-045 -> Market)
 10. Geri çağırma (Recall) ve bloke lot satış engeli
 """
-from decimal import Decimal as D
 import uuid
-import pytest
+from datetime import UTC
+from decimal import Decimal as D
 
-from app.models.catalog import Product, Supplier, Customer, ProductPrice
-from app.models.inventory import Lot, InventoryBalance
-from app.models.production import ProductionOrder
-from app.models.butchering import ButcheringOrder
+import pytest
+from pydantic import BaseModel
+
 from app.core.deps import CurrentUser
 from app.core.errors import AppError
-
+from app.models import MlPrediction, StockMovement
+from app.models.butchering import ButcheringOrder
+from app.models.catalog import Customer, Product, ProductPrice, Supplier
+from app.models.inventory import InventoryBalance, Lot
+from app.models.production import ProductionOrder
+from app.schemas.butchering import (
+    ButcheringCompleteIn,
+    ButcheringInputIn,
+    ButcheringOutputIn,
+    WasteIn,
+)
+from app.schemas.common import redact_cost_data
+from app.schemas.production import CompleteIn, OutputIn, ProductionInputIn, ServiceCostIn
+from app.schemas.sales import SaleIn, SaleLineIn
+from app.services import (
+    butchering as butch_svc,
+)
 from app.services import (
     costing,
-    lots as lots_svc,
-    production as prod_svc,
-    butchering as butch_svc,
-    sales as sales_svc,
-    recall as recall_svc,
-    stock as stock_svc,
+)
+from app.services import (
     idempotency as idemp_svc,
+)
+from app.services import (
+    lots as lots_svc,
+)
+from app.services import (
+    production as prod_svc,
+)
+from app.services import (
+    recall as recall_svc,
+)
+from app.services import (
+    sales as sales_svc,
+)
+from app.services import (
+    stock as stock_svc,
+)
+from app.services import (
     traceability as trace_svc,
 )
-from app.models import MlPrediction, StockMovement
-from app.schemas.common import redact_cost_data
-from app.schemas.production import CompleteIn, OutputIn, ServiceCostIn, ProductionInputIn
-from app.schemas.butchering import ButcheringCompleteIn, ButcheringOutputIn, ButcheringInputIn, WasteIn
-from app.schemas.sales import SaleIn, SaleLineIn
-from pydantic import BaseModel
 
 
 def make_user(uid=1, role="ADMIN", perms=None):
@@ -76,13 +98,13 @@ def test_ekp_production_and_stock_flow(db):
 
     # 2. Hammadde Girişleri (ET-2026-001, BAH-2026-001, BAG-2026-001)
     lot_et, bal_et = lots_svc.receive(db, lot_code="ET-2026-001", product_id=et.id, supplier_id=supplier.id,
-                                      quantity=D("100"), unit_code="KG", unit_cost=D("9.70"),
+                                      quantity=D(100), unit_code="KG", unit_cost=D("9.70"),
                                       received_at=None, expiry_date=None, user_id=user.id, request_id="REQ-REC-01")
     lot_bah, bal_bah = lots_svc.receive(db, lot_code="BAH-2026-001", product_id=bah.id, supplier_id=supplier.id,
-                                        quantity=D("2"), unit_code="KG", unit_cost=D("24.00"),
+                                        quantity=D(2), unit_code="KG", unit_cost=D("24.00"),
                                         received_at=None, expiry_date=None, user_id=user.id, request_id="REQ-REC-02")
     lot_bag, bal_bag = lots_svc.receive(db, lot_code="BAG-2026-001", product_id=bag.id, supplier_id=supplier.id,
-                                        quantity=D("5"), unit_code="KG", unit_cost=D("11.60"),
+                                        quantity=D(5), unit_code="KG", unit_cost=D("11.60"),
                                         received_at=None, expiry_date=None, user_id=user.id, request_id="REQ-REC-03")
     db.flush()
 
@@ -102,14 +124,14 @@ def test_ekp_production_and_stock_flow(db):
     db.flush()
 
     # Girdileri bağla
-    prod_svc.add_input(db, order, ProductionInputIn(lot_id=lot_et.id, quantity=D("100"), unit_code="KG"))
-    prod_svc.add_input(db, order, ProductionInputIn(lot_id=lot_bah.id, quantity=D("2"), unit_code="KG"))
-    prod_svc.add_input(db, order, ProductionInputIn(lot_id=lot_bag.id, quantity=D("5"), unit_code="KG"))
+    prod_svc.add_input(db, order, ProductionInputIn(lot_id=lot_et.id, quantity=D(100), unit_code="KG"))
+    prod_svc.add_input(db, order, ProductionInputIn(lot_id=lot_bah.id, quantity=D(2), unit_code="KG"))
+    prod_svc.add_input(db, order, ProductionInputIn(lot_id=lot_bag.id, quantity=D(5), unit_code="KG"))
 
     # Dış fason hizmet faturası ekle (85 pk @ 5.50 € = 467.50 €)
     prod_svc.add_service_cost(
         db, order,
-        ServiceCostIn(description="Dış üretim fason hizmet bedeli", quantity=D("85"), unit_price=D("5.50"))
+        ServiceCostIn(description="Dış üretim fason hizmet bedeli", quantity=D(85), unit_price=D("5.50"))
     )
 
     # Başlat
@@ -118,7 +140,7 @@ def test_ekp_production_and_stock_flow(db):
 
     # 4. Üretimi Tamamla (85 paket sağlam mamul)
     complete_body = CompleteIn(outputs=[
-        OutputIn(product_id=sucuk.id, lot_code="SUC-2026-045", quantity=D("85"), unit_code="PACK")
+        OutputIn(product_id=sucuk.id, lot_code="SUC-2026-045", quantity=D(85), unit_code="PACK")
     ])
     completed_order = prod_svc.complete(db, order.id, complete_body, user_id=user.id, request_id="REQ-PROD-01")
 
@@ -163,7 +185,7 @@ def test_lamb_butchering_weight_and_cost_distribution(db):
     # Karkas girişi: 25 kg @ 11.50 € ancak beyan edilen toplam tutar 351.00 € (Şartname tutarsızlığı)
     karkas_lot, karkas_bal = lots_svc.receive(
         db, lot_code="KARKAS-2026-001", product_id=kuzu_canli.id, supplier_id=supplier.id,
-        quantity=D("25"), unit_code="KG", unit_cost=D("14.0400"), received_at=None,
+        quantity=D(25), unit_code="KG", unit_cost=D("14.0400"), received_at=None,
         expiry_date=None, user_id=user.id, request_id="REQ-KARKAS-01"
     )
     db.flush()
@@ -174,7 +196,7 @@ def test_lamb_butchering_weight_and_cost_distribution(db):
         ButcheringOrder(
             order_code="PRC-2026-001",
             animal_type="KUZU",
-            input_weight=D("25"),
+            input_weight=D(25),
             input_unit_code="KG",
             total_purchase_cost=D("351.00"),
             declared_unit_price=D("11.50")
@@ -192,7 +214,7 @@ def test_lamb_butchering_weight_and_cost_distribution(db):
     assert mismatch.details["difference"] == "63.5000"
 
     # Girdi bağla ve başlat
-    butch_svc.add_input(db, order, ButcheringInputIn(lot_id=karkas_lot.id, quantity=D("25"), unit_code="KG"))
+    butch_svc.add_input(db, order, ButcheringInputIn(lot_id=karkas_lot.id, quantity=D(25), unit_code="KG"))
     butch_svc.start(db, order, user_id=user.id)
 
     # Çıktılar: But (12 kg), Sırt (6 kg), Omuz (4 kg) = 22 kg kullanılabilir.
@@ -239,15 +261,15 @@ def test_sales_traceability_and_recall_flow(db):
     db.flush()
 
     # Liste satış fiyatı: 25.00 €
-    from datetime import datetime, timezone
-    now = datetime.now(timezone.utc)
+    from datetime import datetime
+    now = datetime.now(UTC)
     db.add(ProductPrice(product_id=sucuk.id, price_type="SALE", amount=D("25.00"), currency_code="EUR", unit_code="PACK", valid_from=now))
     db.flush()
 
     # Mamul lotu girişi yap: 100 paket
     sucuk_lot, sucuk_bal = lots_svc.receive(
         db, lot_code="SUC-TRACE-001", product_id=sucuk.id, supplier_id=None,
-        quantity=D("100"), unit_code="PACK", unit_cost=D("18.16"), received_at=None,
+        quantity=D(100), unit_code="PACK", unit_cost=D("18.16"), received_at=None,
         expiry_date=None, user_id=user.id, request_id="REQ-SUC-INIT"
     )
     db.flush()
@@ -255,7 +277,7 @@ def test_sales_traceability_and_recall_flow(db):
     # Satış 1: Market A'ya 30 paket sat
     sale_in = SaleIn(
         customer_id=customer_a.id,
-        lines=[SaleLineIn(lot_id=sucuk_lot.id, quantity=D("30"), unit_code="PACK")]
+        lines=[SaleLineIn(lot_id=sucuk_lot.id, quantity=D(30), unit_code="PACK")]
     )
     sale = sales_svc.create_sale(db, sale_in, user=user, request_id="REQ-SALE-01")
     assert sale.total_amount == D("750.0000")  # 30 * 25.00 €
@@ -301,7 +323,7 @@ def test_sales_traceability_and_recall_flow(db):
     # Bloke lotun tekrar satılması kesinlikle ENGELLENMELİ (AppError / LOT_BLOCKED)
     sale_blocked_in = SaleIn(
         customer_id=customer_b.id,
-        lines=[SaleLineIn(lot_id=sucuk_lot.id, quantity=D("10"), unit_code="PACK")]
+        lines=[SaleLineIn(lot_id=sucuk_lot.id, quantity=D(10), unit_code="PACK")]
     )
     with pytest.raises(AppError) as exc_info:
         sales_svc.create_sale(db, sale_blocked_in, user=user, request_id="REQ-SALE-02")
@@ -323,8 +345,8 @@ def test_unauthorized_price_tampering_is_rejected(db):
         perms={"sales:create", "sales:read", "catalog:read", "lots:read"}
     )
 
-    from datetime import datetime, timezone
-    now = datetime.now(timezone.utc)
+    from datetime import datetime
+    now = datetime.now(UTC)
 
     customer = Customer(code="MKT-SEC-01", name="Market Güvenlik", customer_type="MARKET")
     sucuk = Product(code="FIN-SUC-SEC", name="Güvenlik Sucuk", product_type="FINISHED_GOOD", base_unit_code="PACK")
@@ -335,9 +357,9 @@ def test_unauthorized_price_tampering_is_rejected(db):
     db.add(ProductPrice(product_id=sucuk.id, price_type="SALE", amount=D("25.00"), currency_code="EUR", unit_code="PACK", valid_from=now))
     db.flush()
 
-    lot, bal = lots_svc.receive(
+    lot, _bal = lots_svc.receive(
         db, lot_code="SUC-SEC-001", product_id=sucuk.id, supplier_id=None,
-        quantity=D("50"), unit_code="PACK", unit_cost=D("18.16"), received_at=None,
+        quantity=D(50), unit_code="PACK", unit_cost=D("18.16"), received_at=None,
         expiry_date=None, user_id=sales_rep.id, request_id="REQ-SEC-01"
     )
     db.flush()
@@ -347,7 +369,7 @@ def test_unauthorized_price_tampering_is_rejected(db):
         customer_id=customer.id,
         lines=[SaleLineIn(
             lot_id=lot.id,
-            quantity=D("5"),
+            quantity=D(5),
             unit_code="PACK",
             unit_price=D("10.00")  # Yetkisiz fiyat manipülasyonu
         )]
@@ -392,7 +414,7 @@ def test_negative_quantity_receipt_rejected(db):
     with pytest.raises(AppError) as exc_info:
         lots_svc.receive(
             db, lot_code="NEG-LOT-001", product_id=prod.id, supplier_id=None,
-            quantity=D("-10"), unit_code="KG", unit_cost=D("5.00"), received_at=None,
+            quantity=D(-10), unit_code="KG", unit_cost=D("5.00"), received_at=None,
             expiry_date=None, user_id=user.id, request_id="REQ-NEG-01"
         )
     assert exc_info.value.status_code == 400
@@ -409,8 +431,8 @@ def test_reference_scenario_full_traceability_and_multi_market_recall(db):
     7. Geri çağırma (recall): SUC-2026-045 bloke edilir (409 LOT_BLOCKED), etki simülasyonu Market A(30), B(25), C(30).
     """
     user = make_user()
-    from datetime import datetime, timezone
-    now = datetime.now(timezone.utc)
+    from datetime import datetime
+    now = datetime.now(UTC)
 
     # Tedarikçi ve Müşteriler
     sup = Supplier(code="SUP-REF-01", name="Karakaya Besicilik", supplier_type="FARM")
@@ -432,14 +454,14 @@ def test_reference_scenario_full_traceability_and_multi_market_recall(db):
     db.flush()
 
     # 1. Hammadde Alış Girişleri
-    lot_et, bal_et = lots_svc.receive(db, lot_code="ET-2026-001-REF", product_id=et.id, supplier_id=sup.id,
-                                      quantity=D("100"), unit_code="KG", unit_cost=D("9.70"),
+    lot_et, _bal_et = lots_svc.receive(db, lot_code="ET-2026-001-REF", product_id=et.id, supplier_id=sup.id,
+                                      quantity=D(100), unit_code="KG", unit_cost=D("9.70"),
                                       received_at=None, expiry_date=None, user_id=user.id, request_id="R1")
-    lot_bah, bal_bah = lots_svc.receive(db, lot_code="BAH-2026-001-REF", product_id=bah.id, supplier_id=sup.id,
-                                        quantity=D("2"), unit_code="KG", unit_cost=D("24.00"),
+    lot_bah, _bal_bah = lots_svc.receive(db, lot_code="BAH-2026-001-REF", product_id=bah.id, supplier_id=sup.id,
+                                        quantity=D(2), unit_code="KG", unit_cost=D("24.00"),
                                         received_at=None, expiry_date=None, user_id=user.id, request_id="R2")
-    lot_bag, bal_bag = lots_svc.receive(db, lot_code="BAG-2026-001-REF", product_id=bag.id, supplier_id=sup.id,
-                                        quantity=D("5"), unit_code="KG", unit_cost=D("11.60"),
+    lot_bag, _bal_bag = lots_svc.receive(db, lot_code="BAG-2026-001-REF", product_id=bag.id, supplier_id=sup.id,
+                                        quantity=D(5), unit_code="KG", unit_cost=D("11.60"),
                                         received_at=None, expiry_date=None, user_id=user.id, request_id="R3")
     db.flush()
 
@@ -449,16 +471,16 @@ def test_reference_scenario_full_traceability_and_multi_market_recall(db):
     db.add(order)
     db.flush()
 
-    prod_svc.add_input(db, order, ProductionInputIn(lot_id=lot_et.id, quantity=D("100"), unit_code="KG"))
-    prod_svc.add_input(db, order, ProductionInputIn(lot_id=lot_bah.id, quantity=D("2"), unit_code="KG"))
-    prod_svc.add_input(db, order, ProductionInputIn(lot_id=lot_bag.id, quantity=D("5"), unit_code="KG"))
-    prod_svc.add_service_cost(db, order, ServiceCostIn(description="Fason üretim faturası", quantity=D("85"), unit_price=D("5.50")))
+    prod_svc.add_input(db, order, ProductionInputIn(lot_id=lot_et.id, quantity=D(100), unit_code="KG"))
+    prod_svc.add_input(db, order, ProductionInputIn(lot_id=lot_bah.id, quantity=D(2), unit_code="KG"))
+    prod_svc.add_input(db, order, ProductionInputIn(lot_id=lot_bag.id, quantity=D(5), unit_code="KG"))
+    prod_svc.add_service_cost(db, order, ServiceCostIn(description="Fason üretim faturası", quantity=D(85), unit_price=D("5.50")))
     prod_svc.start(db, order, user_id=user.id)
 
     # 3. Üretimi Tamamla (85 paket SUC-2026-045-REF)
     completed_order = prod_svc.complete(
         db, order.id,
-        CompleteIn(outputs=[OutputIn(product_id=sucuk.id, lot_code="SUC-2026-045-REF", quantity=D("85"), unit_code="PACK")]),
+        CompleteIn(outputs=[OutputIn(product_id=sucuk.id, lot_code="SUC-2026-045-REF", quantity=D(85), unit_code="PACK")]),
         user_id=user.id, request_id="R4"
     )
     assert completed_order.total_cost == D("1543.5000")
@@ -469,9 +491,9 @@ def test_reference_scenario_full_traceability_and_multi_market_recall(db):
     assert sucuk_bal.on_hand_quantity == D("85.0000")
 
     # 4. Satış ve Sevkiyatlar: Market A (30 pk), Market B (25 pk), Market C (30 pk) = 85 pk
-    sale_a = sales_svc.create_sale(db, SaleIn(customer_id=mkt_a.id, lines=[SaleLineIn(lot_id=sucuk_lot.id, quantity=D("30"), unit_code="PACK")]), user=user, request_id="S-A")
-    sale_b = sales_svc.create_sale(db, SaleIn(customer_id=mkt_b.id, lines=[SaleLineIn(lot_id=sucuk_lot.id, quantity=D("25"), unit_code="PACK")]), user=user, request_id="S-B")
-    sale_c = sales_svc.create_sale(db, SaleIn(customer_id=mkt_c.id, lines=[SaleLineIn(lot_id=sucuk_lot.id, quantity=D("30"), unit_code="PACK")]), user=user, request_id="S-C")
+    sales_svc.create_sale(db, SaleIn(customer_id=mkt_a.id, lines=[SaleLineIn(lot_id=sucuk_lot.id, quantity=D(30), unit_code="PACK")]), user=user, request_id="S-A")
+    sales_svc.create_sale(db, SaleIn(customer_id=mkt_b.id, lines=[SaleLineIn(lot_id=sucuk_lot.id, quantity=D(25), unit_code="PACK")]), user=user, request_id="S-B")
+    sales_svc.create_sale(db, SaleIn(customer_id=mkt_c.id, lines=[SaleLineIn(lot_id=sucuk_lot.id, quantity=D(30), unit_code="PACK")]), user=user, request_id="S-C")
 
     db.refresh(sucuk_bal)
     assert sucuk_bal.on_hand_quantity == D("0.0000")
@@ -501,7 +523,7 @@ def test_reference_scenario_full_traceability_and_multi_market_recall(db):
 
     # Bloke lotun tekrar satılması 409 LOT_BLOCKED ile engellenmeli
     with pytest.raises(AppError) as exc_info:
-        sales_svc.create_sale(db, SaleIn(customer_id=mkt_a.id, lines=[SaleLineIn(lot_id=sucuk_lot.id, quantity=D("1"), unit_code="PACK")]), user=user, request_id="BLOCK-TEST")
+        sales_svc.create_sale(db, SaleIn(customer_id=mkt_a.id, lines=[SaleLineIn(lot_id=sucuk_lot.id, quantity=D(1), unit_code="PACK")]), user=user, request_id="BLOCK-TEST")
     assert exc_info.value.status_code == 409
     assert exc_info.value.code == "LOT_BLOCKED"
 

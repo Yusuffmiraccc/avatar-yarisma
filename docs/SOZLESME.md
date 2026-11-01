@@ -1,6 +1,6 @@
 # AVATAR — Tek Geçerli Sözleşme
 
-Bu belge `docs/handoff/` içindeki 43 ciltlik paketin çelişkilerini çözer. Kod yazarken çelişki halinde **bu belge** geçerlidir. Öncelik sırası: bu belge, `handoff/BACKEND_DATABASE_ARCHITECTURE_CLOSURE.md` (v1.45), `volume-01-34`, diğer ciltler.
+Bu belge tasarım kararlarının tek kaynağıdır; kod ve diğer belgeler arasında çelişki olursa **bu belge** geçerlidir.
 
 Kaynak: `AVATAR_Assessment.pdf`. Tarih: 2026-10-22. Teslim: 2026-11-01 23:59.
 

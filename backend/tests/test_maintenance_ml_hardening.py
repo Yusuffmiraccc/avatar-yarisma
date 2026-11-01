@@ -212,6 +212,7 @@ def test_interval_coverage_is_reported_for_both_models():
 
 def test_deserialization_is_prevented_when_signature_is_tampered_or_missing(tmp_path, monkeypatch):
     import pytest
+
     from app.ml import modeling
 
     path = tmp_path / "protected_model.joblib"
@@ -244,6 +245,7 @@ def test_deserialization_is_prevented_when_signature_is_tampered_or_missing(tmp_
 
 def test_ml_signing_key_is_independent_of_jwt_secret(tmp_path, monkeypatch):
     from pydantic import SecretStr
+
     from app.core.config import get_settings
     from app.ml import modeling
 
@@ -253,7 +255,6 @@ def test_ml_signing_key_is_independent_of_jwt_secret(tmp_path, monkeypatch):
 
     # Changing JWT secret must NOT invalidate ML signature verification
     settings = get_settings()
-    original_jwt = settings.jwt_secret_key
     monkeypatch.setattr(settings, "jwt_secret_key", SecretStr("completely-different-jwt-key-9999999999"))
     assert modeling.load(str(path)) == artifact, "JWT secret rotation incorrectly broke ML artifact verification!"
 
@@ -266,6 +267,7 @@ def test_ml_signing_key_is_independent_of_jwt_secret(tmp_path, monkeypatch):
 
 def test_missing_ml_signing_secret_fails_safely(tmp_path, monkeypatch):
     import pytest
+
     from app.core.config import get_settings
     from app.ml import modeling, service
 
@@ -289,6 +291,7 @@ def test_missing_ml_signing_secret_fails_safely(tmp_path, monkeypatch):
 def test_production_config_enforces_ml_secret_and_key_separation():
     import pytest
     from pydantic import SecretStr
+
     from app.core.config import Settings
 
     base_kwargs = {
@@ -316,6 +319,7 @@ def test_production_config_enforces_ml_secret_and_key_separation():
 
 def test_isolation_outliers_handles_non_finite_and_empty_inputs():
     import numpy as np
+
     from app.ml.anomaly_model import isolation_outliers
 
     # Empty array

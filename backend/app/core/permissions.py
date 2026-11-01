@@ -1,4 +1,4 @@
-"""Rol → izin matrisi (deny-by-default). Kaynak: handoff cilt 1.8/1.9 + docs/SOZLESME.md."""
+"""Rol → izin matrisi (deny-by-default). Kaynak: docs/SOZLESME.md."""
 
 ALL_PERMISSIONS = frozenset(
     {

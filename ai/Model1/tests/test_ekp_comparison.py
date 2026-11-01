@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import joblib
+import pytest
 
 from training.compare_ekp_models import (
     DATA,
@@ -55,6 +56,7 @@ def test_ekp_comparison_data_is_explicitly_synthetic_and_formula_consistent():
     assert checks["fason_rate_max_abs_diff_tl"] <= 0.0051
 
 
+@pytest.mark.skipif(not CANDIDATE_PATH.exists(), reason="aday model eğitilmedi (training.compare_ekp_models)")
 def test_ekp_research_candidate_is_separate_and_loads_finite_predictions():
     package = joblib.load(CANDIDATE_PATH)
     assert package["data_type"] == "synthetic"

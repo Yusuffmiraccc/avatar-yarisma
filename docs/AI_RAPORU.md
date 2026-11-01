@@ -155,7 +155,7 @@ Not: PDF'teki kuzu örneğinde (PRC-2026-001) yalnızca üç parça kayıtlıdı
 |---|---|---|---|
 | `ai/Model1` verim | Net sucuk çıktısı (kg) | MAE 12,17 · R² 0,971 | %85,4 iyileşme |
 | `ai/Model1` EKP | EKP (TL/kg) | MAE 49,87 · R² 0,107 | %3,49 iyileşme; servis "üretime hazır değil" der |
-| `ai/Model2` Model B | 8 karkas çıktısı (kg) | Ridge 1,0079 · Random Forest 1,0523 (baseline = 1,0000, normalize MAE oranı) | Hiçbir ML adayı baseline'ı geçemedi; aday `production_ready=false`, tahmin uç noktası 503 döner |
+| `ai/Model2` Model B | 8 karkas çıktısı (kg) | Ridge 1,0079 · Random Forest 1,0523 (baseline = 1,0000, normalize MAE oranı) | Hiçbir ML adayı baseline'ı geçemedi; aday `production_ready=false`; `/v1/predict/carcass-cuts` 503 döner, `/v1/predict/carcass-cuts/experimental` adayı `experimental=true` işaretiyle yalnızca pilot için çalıştırır |
 
 Notlar:
 - Üç hat da sentetik/simüle veriyle çalışır. Metrikler gerçek işletme başarısı değildir.

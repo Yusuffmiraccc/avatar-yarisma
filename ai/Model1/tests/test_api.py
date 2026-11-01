@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 import joblib
+import pytest
 import pandas as pd
 from sklearn.dummy import DummyRegressor
 from app.main import app
@@ -211,6 +212,10 @@ def test_prediction_loads_model_bundles_from_model_directory(monkeypatch, tmp_pa
     assert response.json()["predicted_ekp_tl_per_kg"] == 210.0
 
 
+@pytest.mark.skipif(
+    not (main_module.MODEL_DIR / "yield_model.joblib").exists(),
+    reason="üretim modeli kurulu değil (training.train_production sonrası aday dosyaları terfi ettirin)",
+)
 def test_existing_api_models_load_and_predict():
     response = client.post("/v1/predict/production", json=valid_prediction_payload())
     assert response.status_code == 200, response.text
