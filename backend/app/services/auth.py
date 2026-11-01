@@ -23,24 +23,13 @@ _mem_inflight: dict[str, int] = {}
 _redis_lock = threading.Lock()
 _redis_client: Redis | None = None
 _redis_url: str | None = None
-_redis_available: bool | None = None
 
 def _is_redis_available() -> bool:
-    global _redis_available
-    if _redis_available is not None:
-        return _redis_available
+    # Yalnızca açıkça memory:// verilirse bellek modu; Redis hatası fail-closed (429/503) olur.
     url = get_settings().redis_url.get_secret_value()
-    if url.startswith("memory://") or not url:
-        _redis_available = False
-        return False
-    try:
-        client = Redis.from_url(url, decode_responses=True, socket_connect_timeout=0.2, socket_timeout=0.2)
-        client.ping()
-        _redis_available = True
-        return True
-    except (RedisError, OSError):
-        _redis_available = False
-        return False
+    return bool(url) and not url.startswith("memory://")
+
+
 _KEY_PREFIX = "avatar:login-limit:v1:"
 MAX_ATTEMPTS, IP_MAX_ATTEMPTS, WINDOW = 10, 50, 15 * 60
 _DUMMY_PASSWORD_HASH = "$argon2id$v=19$m=65536,t=3,p=4$a+35qKYnSjBwgJTFIYoJEw$cl6rhWyUvcUA81FYT+qpLZ1qAq/mzyG0myDRwikY/HQ"

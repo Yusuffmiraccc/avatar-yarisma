@@ -33,29 +33,15 @@ Aşağıdaki tablo, şartnamede belirtilen 18 kritik senaryonun depodaki somut t
 
 ## 2. Test Çalıştırma Sonuçları
 
-### 2.1 Backend Test Paketi (13 Test, %100 Başarı)
+### 2.1 Backend Test Paketi (118 Test, %100 Başarı)
 
 - **Komut:**
   ```powershell
-  backend\.venv\Scripts\python.exe -m pytest backend/tests/test_costing.py backend/tests/test_standalone_flows.py -v
+  cd backend; .venv\Scripts\python.exe -m pytest -q   # MySQL (3307) ve Redis (16379) test konteynerleri gerekir
   ```
-- **Çıktı:**
+- **Çıktı (31.10.2026, MySQL 8.4 + Redis):**
   ```text
-  backend\tests\test_costing.py::test_pdf_reference_scenario_ekp PASSED                        [  7%]
-  backend\tests\test_costing.py::test_allocate_sums_exactly_with_residual_on_last PASSED       [ 15%]
-  backend\tests\test_costing.py::test_allocate_by_weight_property PASSED                       [ 23%]
-  backend\tests\test_costing.py::test_lamb_source_inconsistency_arithmetic PASSED             [ 30%]
-  backend\tests\test_standalone_flows.py::test_ekp_production_and_stock_flow PASSED           [ 38%]
-  backend\tests\test_standalone_flows.py::test_lamb_butchering_weight_and_cost_distribution PASSED [ 46%]
-  backend\tests\test_standalone_flows.py::test_sales_traceability_and_recall_flow PASSED       [ 53%]
-  backend\tests\test_standalone_flows.py::test_unauthorized_price_tampering_is_rejected PASSED [ 61%]
-  backend\tests\test_standalone_flows.py::test_idempotency_key_reused_with_different_body_fails_with_409 PASSED [ 69%]
-  backend\tests\test_standalone_flows.py::test_negative_quantity_receipt_rejected PASSED      [ 76%]
-  backend\tests\test_standalone_flows.py::test_reference_scenario_full_traceability_and_multi_market_recall PASSED [ 84%]
-  backend\tests\test_standalone_flows.py::test_unauthorized_user_cost_redaction PASSED        [ 92%]
-  backend\tests\test_standalone_flows.py::test_ml_predictions_isolated_from_financial_ledgers PASSED [100%]
-
-  ======================= 13 passed, 1 warning in 29.91s ========================
+  118 passed, 1 warning in 342.69s (0:05:42)
   ```
 
 ### 2.2 Web Yönetim Paneli Vitest Paketi (11 Test, %100 Başarı)

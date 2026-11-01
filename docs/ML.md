@@ -102,3 +102,9 @@ Model dosyaları rastgele serileştirilmiş pickle dosyaları olarak bırakılma
   *Yanıt:* Parça bazında beklenen kg ağırlıkları, fire tahmini, baseline karşılaştırması.
 - `POST /api/v1/ai/models/train`: Tüm modelleri yeniden eğitir, çapraz doğrulama yapar ve yeni sürümleri kaydeder.
 - `GET /api/v1/ai/models`: Aktif model sürümlerini, örnek sayılarını ve metriklerini listeler.
+
+---
+
+## 6. Resmî hat ve ek araştırma
+
+Yarışmanın AI-A ve AI-B modelleri bu belgede anlatılan `backend/app/ml` hattıdır. `ai/Model1` (sucuk/EKP, TL) ve `ai/Model2` (Model B) ürüne bağlı olmayan ek araştırma servisleridir. Ölçülen sonuçlar ve sınırlar için bkz. `docs/AI_RAPORU.md` Bölüm 8.
