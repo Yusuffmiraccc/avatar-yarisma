@@ -18,7 +18,7 @@ def data_model() -> str:
         "",
         (
             "Bu belge `backend/app/models` ORM metadata'sından üretilir (`python -m scripts.gen_docs`). "
-            "İş kuralları için `SOZLESME.md`."
+            "İş kuralları için `README.md` ve `AI_RAPORU.md`."
         ),
         "",
         f"Toplam tablo: **{len(Base.metadata.tables)}**",

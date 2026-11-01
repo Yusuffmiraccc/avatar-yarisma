@@ -19,7 +19,7 @@ class ProductionOrder(Base):
     started_at: Mapped[datetime | None] = ts()
     completed_at: Mapped[datetime | None] = ts()
     supplier_id: Mapped[int | None] = fk("suppliers.id", nullable=True)
-    # Tamamlamada hesaplanan snapshot'lar (SOZLESME §3.4)
+    # Tamamlamada hesaplanan snapshot'lar
     total_input_cost: Mapped[Decimal | None] = mapped_column(Money)
     total_service_cost: Mapped[Decimal | None] = mapped_column(Money)
     total_cost: Mapped[Decimal | None] = mapped_column(Money)

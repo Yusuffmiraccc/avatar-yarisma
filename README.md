@@ -1,6 +1,6 @@
 # AVATAR — Üretim, Gerçek Maliyet (EKP), Satış ve Lot İzlenebilirliği
 
-AVATAR Yapay Zekâ Yarışması değerlendirme belgesindeki (`AVATAR_Assessment.pdf`) üç görevi ve iki yapay zekâ modelini kapsayan çalışan bir prototiptir.
+AVATAR Yapay Zekâ Yarışması değerlendirme belgesindeki üç görevi ve iki yapay zekâ modelini kapsayan çalışan bir prototiptir.
 
 | Bileşen | Teknoloji | Klasör |
 |---|---|---|
@@ -92,22 +92,26 @@ cd ..\web; npm test; npm run build; npx playwright test  # 11 birim test + 1 uç
 cd ..\android; .\gradlew.bat testDebugUnitTest           # 19 birim test
 ```
 
-Sonuçlar ve senaryo eşlemesi: `docs/TESTING.md`, `docs/TEST_REPORT.md`. Uçtan uca jüri demosu: `docs/DEMO.md`.
+Sonuçlar ve senaryo eşlemesi: `docs/TEST_REPORT.md`.
+
+## Uçtan uca demo
+
+`docker compose up -d --build` sonrası web panelde (`trace@avatar.demo`):
+
+1. **Lot izlenebilirliği** sayfasında `ET-2026-001` aranır: `URT-2026-045` → `SUC-2026-045` (85 paket) → Market A 30, Market B 25, Market C 30.
+2. **Geri çağırma** sayfasında `RCL-2026-001` önce simüle edilir, sonra etkinleştirilir; lot bloke olur.
+3. Saha satış kullanıcısıyla (`sales@avatar.demo`, Android veya `POST /api/v1/sales`) bloke lot satışı `409 LOT_BLOCKED` ile reddedilir.
+4. Yönetici (`admin@avatar.demo`) panelinde EKP (18,16 €/paket), kuzu parçalama maliyet dağılımı ve AI tahminleri görülür.
 
 ## Belgeler
 
 | Belge | İçerik |
 |---|---|
-| `docs/SOZLESME.md` | Tasarım kararlarının tek kaynağı |
-| `docs/architecture.md` | Mimari |
-| `docs/DATA_MODEL.md`, `docs/DATABASE.md` | Veri modeli ve şema |
+| `docs/DATA_MODEL.md` | Veri modeli |
 | `docs/API.md`, `contract/openapi.json` | API |
 | `docs/SENKRON.md` | SQLite ↔ MySQL senkronizasyonu |
-| `docs/AI_RAPORU.md`, `docs/ML.md` | Yapay zekâ modelleri, baseline'lar, hata metrikleri |
-| `docs/SECURITY.md` | Güvenlik tasarımı |
-| `docs/SETUP.md` | Ayrıntılı kurulum |
-| `docs/DEMO.md` | Uçtan uca demo akışı |
-| `docs/TESTING.md`, `docs/TEST_REPORT.md` | Test sonuçları |
+| `docs/AI_RAPORU.md` | Yapay zekâ modelleri, baseline'lar, hata metrikleri |
+| `docs/TEST_REPORT.md` | Test sonuçları |
 
 ## Bilinen sınırlar
 

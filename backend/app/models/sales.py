@@ -16,7 +16,7 @@ class Sale(Base):
     id: Mapped[int] = pk()
     sale_code: Mapped[str] = mapped_column(String(80), unique=True)
     customer_id: Mapped[int | None] = fk("customers.id", nullable=True)
-    shipment_id: Mapped[int | None] = fk("shipments.id", nullable=True)  # satış → dispatch bağı (SOZLESME §2)
+    shipment_id: Mapped[int | None] = fk("shipments.id", nullable=True)  # satış → dispatch bağı
     status: Mapped[str] = mapped_column(String(24), default="COMPLETED")  # COMPLETED|VOIDED|REFUNDED
     sold_at: Mapped[datetime] = ts(nullable=False)
     currency_code: Mapped[str] = mapped_column(String(3), default="EUR")

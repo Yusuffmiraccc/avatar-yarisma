@@ -23,7 +23,7 @@ class Lot(Base):
     lot_origin_type: Mapped[str] = mapped_column(String(24))
     # ACTIVE | EXHAUSTED | CLOSED  (blokaj ayrı tabloda)
     status: Mapped[str] = mapped_column(String(24), default="ACTIVE")
-    # Lot birim maliyeti: alış fiyatı veya EKP / parçalama tahsisi (SOZLESME §3.4)
+    # Lot birim maliyeti: alış fiyatı veya EKP / parçalama tahsisi
     unit_cost: Mapped[Decimal | None] = mapped_column(Money)
     location_code: Mapped[str] = mapped_column(String(40), default="MAIN")
     is_demo: Mapped[bool] = mapped_column(default=False)

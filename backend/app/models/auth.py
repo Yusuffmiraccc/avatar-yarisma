@@ -36,7 +36,7 @@ class UserRole(Base):
 
 
 class RefreshSession(Base):
-    """SOZLESME §3.1: refresh rotation, hash saklanır, reuse'da aile iptali."""
+    """refresh rotation, hash saklanır, reuse'da aile iptali."""
 
     __tablename__ = "refresh_sessions"
     id: Mapped[int] = pk()

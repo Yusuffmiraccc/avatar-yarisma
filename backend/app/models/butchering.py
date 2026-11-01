@@ -101,7 +101,7 @@ class ButcheringRecipeLine(Base):
 
 
 class WeightVarianceRecord(Base):
-    """Ağırlık dengesi toleransı aşımı: gerekçe + yetkili onay (SOZLESME §3.2)."""
+    """Ağırlık dengesi toleransı aşımı: gerekçe + yetkili onay."""
 
     __tablename__ = "weight_variance_records"
     id: Mapped[int] = pk()
