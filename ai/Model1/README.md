@@ -296,3 +296,39 @@ Decision: EKP remains research-only and is not ready for production. Before eval
 
 
 Final regression run on 2026-10-24: .venv\Scripts\python.exe -m pytest -v completed with 83 passed, 0 failed, and 1 StarletteDeprecationWarning from the installed FastAPI/Starlette/httpx TestClient stack. This is the project virtual environment equivalent of python -m pytest -v. No dependency was changed.
+
+---
+
+## 2026-11-01 MLOps & Backend Entegrasyon Güncellemesi
+
+### 1. Mimari ve Konumlandırma
+- **Araştırma / Prototip Paketi:** `ai/Model1/` (Sentetik veriyle model adayları, 83 birim testi ve bağımsız raporlar).
+- **Backend Entegre Servisi:** `backend/app/ml/` (`modeling.py`, `service.py`, `anomaly_model.py`).
+- **Konteyner ve Kalıcılık:** Docker Compose içinde `avatar_ml` adlandırılmış hacmi `/srv/ml_artifacts` dizinine bağlanmıştır. Konteyner yeniden başlatılsa dahi eğitilen modeller silinmez.
+- **Kriptografik İzolasyon (Key Separation):** Model dosyaları `ML_SIGNING_SECRET` ortam değişkeniyle SHA-256 HMAC ile imzalanır (`.joblib.sig`). JWT oturum anahtarından bağımsızdır. Kurcalanmış veya imzasız dosyalar deserialize edilmeden reddedilir.
+
+### 2. Eğitim ve Doğrulama Komutları
+- **Model 1 Aday Eğitimi:**
+  ```powershell
+  python ai/Model1/training/train_production.py
+  ```
+  *Çıktı:* `ai/Model1/models/yield_model_candidate.joblib` ve `ekp_model_candidate.joblib`.
+- **Backend Yeniden Eğitim (Senkron & Kilitli):**
+  ```powershell
+  # HTTP API üzerinden:
+  Invoke-RestMethod -Method POST -Uri http://127.0.0.1:8000/api/v1/ai/models/train -Headers @{Authorization="Bearer $TOKEN"}
+  ```
+- **Metrik Doğrulama Betiği:**
+  ```powershell
+  python scripts/verify_ml_metrics.py
+  ```
+
+### 3. API Uç Noktaları ve Durum
+- `GET /api/v1/ai/models`: Model 1 ve Model 2 aktif sürüm, eğitim zamanı, örnek sayısı, seçilen model ve sınırlılıkları döndürür.
+- `POST /api/v1/ai/production-yield/predict`: Üretim emri ID'si alır; sağlam mamul adedi, tahmini EKP ve %95 güven aralığı üretir.
+- `GET /api/v1/ai/predictions`: Tahmin ile emrin gerçekleşen fiili çıktısını ve EKP sapmasını (`ekp_deviation`) birlikte listeler.
+
+### 4. Gerçek Üretim Durumu ve Şeffaflık
+- **Veri Kaynağı:** `data/raw/sucuk_uretim_1000_simule_parti.csv` (1.000 adet simüle/sentetik parti).
+- **Üretime Hazır Olma:** **Karar Desteği (Decision Support) Düzeyinde.** Model karar desteği ve operasyonel anomali uyarısı sağlar. Kesin muhasebe EKP'sinin ve finansal envanter kayıtlarının yerine geçmez. API yanıtlarında sentetik sınırlılık notu açıkça sunulur.
+

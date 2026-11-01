@@ -40,6 +40,12 @@ def _connect(db_path: Path) -> sqlite3.Connection:
     connection.row_factory = sqlite3.Row
     connection.execute("PRAGMA foreign_keys = ON")
     connection.executescript(migration_sql)
+    try:
+        cols = [r["name"] for r in connection.execute("PRAGMA table_info(model_b_predictions)").fetchall()]
+        if "is_experimental" not in cols:
+            connection.execute("ALTER TABLE model_b_predictions ADD COLUMN is_experimental INTEGER NOT NULL DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass
     return connection
 
 
@@ -53,17 +59,34 @@ def _connection(db_path: Path):
         connection.close()
 
 
-def save_prediction(db_path: Path, *, bundle: dict, species: str, carcass_kg: float,
-                    predicted_cuts: dict[str, float]) -> tuple[str, str]:
+def save_prediction(
+    db_path: Path,
+    *,
+    bundle: dict,
+    species: str,
+    carcass_kg: float,
+    predicted_cuts: dict[str, float],
+    is_experimental: bool = False,
+) -> tuple[str, str]:
     prediction_id, created_at = str(uuid4()), _now()
+    source_type = "synthetic" if is_experimental else "measured"
     with _connection(db_path) as conn:
         conn.execute(
             """INSERT INTO model_b_predictions
-               (prediction_id, model_version, data_version, source_type, hayvan_turu,
+               (prediction_id, model_version, data_version, source_type, is_experimental, hayvan_turu,
                 karkas_agirligi_kg, predicted_cuts_kg_json, created_at_utc)
-               VALUES (?, ?, ?, 'measured', ?, ?, ?, ?)""",
-            (prediction_id, str(bundle["model_version"]), str(bundle["data_version"]),
-             species, float(carcass_kg), json.dumps(predicted_cuts, ensure_ascii=False, allow_nan=False), created_at),
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                prediction_id,
+                str(bundle["model_version"]),
+                str(bundle["data_version"]),
+                source_type,
+                1 if is_experimental else 0,
+                species,
+                float(carcass_kg),
+                json.dumps(predicted_cuts, ensure_ascii=False, allow_nan=False),
+                created_at,
+            ),
         )
     return prediction_id, created_at
 
@@ -97,7 +120,7 @@ def get_evaluation(db_path: Path, prediction_id: str) -> dict:
     with _connection(db_path) as conn:
         row = conn.execute(
             """SELECT p.predicted_cuts_kg_json, p.model_version, p.data_version,
-                      p.source_type, p.created_at_utc, a.actual_cuts_kg_json,
+                      p.source_type, p.is_experimental, p.created_at_utc, a.actual_cuts_kg_json,
                       a.actual_source_type, a.measured_at_utc, a.recorded_at_utc
                FROM model_b_predictions p LEFT JOIN model_b_actuals a USING (prediction_id)
                WHERE p.prediction_id = ?""",
@@ -114,6 +137,7 @@ def get_evaluation(db_path: Path, prediction_id: str) -> dict:
         "model_version": row["model_version"],
         "data_version": row["data_version"],
         "source_type": row["source_type"],
+        "is_experimental": bool(row["is_experimental"]) if "is_experimental" in row.keys() else False,
         "prediction_created_at_utc": row["created_at_utc"],
         "actual_source_type": row["actual_source_type"],
         "actual_measured_at_utc": row["measured_at_utc"],

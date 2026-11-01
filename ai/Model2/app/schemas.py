@@ -31,6 +31,18 @@ class CarcassCutsPredictionResponse(BaseModel):
     model_notice: str
 
 
+class CarcassCutsExperimentalPredictionResponse(BaseModel):
+    predicted_cuts_kg: dict[str, float]
+    prediction_id: str
+    prediction_created_at_utc: str
+    model_version: str
+    data_version: str
+    source_type: str = "synthetic"
+    production_ready: bool = False
+    experimental: bool = True
+    model_notice: str
+
+
 class Model2StatusResponse(BaseModel):
     service: str
     model_b_production_ready: bool
@@ -86,6 +98,7 @@ class StoredCarcassCutsEvaluationResponse(BaseModel):
     model_version: str
     data_version: str
     source_type: str
+    is_experimental: bool = False
     prediction_created_at_utc: str
     actual_source_type: str
     actual_measured_at_utc: str

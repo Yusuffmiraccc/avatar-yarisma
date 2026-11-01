@@ -124,3 +124,39 @@ def load_production_bundle(model_dir: Path) -> dict[str, Any] | None:
         return bundle
     except Exception:
         return None
+
+
+def load_synthetic_candidate_bundle(model_dir: Path) -> dict[str, Any] | None:
+    """Load verified synthetic candidate artifact strictly for experimental pilot inference."""
+    manifest = read_synthetic_candidate_manifest(model_dir)
+    if manifest is None:
+        return None
+
+    artifact_path = Path(model_dir) / CANDIDATE_FILENAME
+    try:
+        with artifact_path.open("rb") as artifact_file:
+            actual_hash = _sha256_fileobj(artifact_file)
+            if not secrets.compare_digest(actual_hash, manifest["artifact_sha256"].lower()):
+                return None
+            artifact_file.seek(0)
+            bundle = joblib.load(artifact_file)
+
+        if (
+            not isinstance(bundle, dict)
+            or bundle.get("production_ready") is not False
+            or bundle.get("source_type") != "synthetic"
+            or bundle.get("feature_columns") != list(MODEL_B_FEATURES)
+            or bundle.get("target_columns") != list(MODEL_B_TARGETS)
+            or not isinstance(bundle.get("model_version"), str)
+            or not bundle.get("model_version")
+            or not isinstance(bundle.get("data_version"), str)
+            or not bundle.get("data_version")
+            or not hasattr(bundle.get("model"), "predict")
+            or bundle.get("model_version") != manifest["model_version"]
+            or bundle.get("data_version") != manifest["data_version"]
+        ):
+            return None
+        return bundle
+    except Exception:
+        return None
+

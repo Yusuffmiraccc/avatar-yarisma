@@ -52,6 +52,37 @@ def _write_production_bundle(directory: Path, *, source_type="measured", product
     return bundle_path
 
 
+def _write_candidate_bundle(directory: Path, *, source_type="synthetic", production_ready=False, artifact_hash=None):
+    directory.mkdir(parents=True, exist_ok=True)
+    bundle_path = directory / artifact.CANDIDATE_FILENAME
+    bundle = {
+        "model": FixedModel(),
+        "feature_columns": list(MODEL_B_FEATURES),
+        "target_columns": list(MODEL_B_TARGETS),
+        "model_version": "synthetic-candidate-v1",
+        "data_version": "synthetic-data-v1",
+        "source_type": source_type,
+        "production_ready": production_ready,
+    }
+    import joblib
+
+    joblib.dump(bundle, bundle_path)
+    digest = hashlib.sha256(bundle_path.read_bytes()).hexdigest()
+    manifest = {
+        "manifest_version": 1,
+        "artifact_filename": artifact.CANDIDATE_FILENAME,
+        "artifact_sha256": artifact_hash or digest,
+        "model_version": bundle["model_version"],
+        "data_version": bundle["data_version"],
+        "source_type": source_type,
+        "production_ready": production_ready,
+        "feature_columns": list(MODEL_B_FEATURES),
+        "target_columns": list(MODEL_B_TARGETS),
+    }
+    (directory / artifact.CANDIDATE_MANIFEST).write_text(json.dumps(manifest), encoding="utf-8")
+    return bundle_path
+
+
 def test_health_and_status_are_model2_specific(monkeypatch):
     model_dir = Path(__file__).resolve().parents[1] / "models"
     monkeypatch.setattr(main, "MODEL_B_DIR", model_dir)
@@ -178,3 +209,117 @@ def test_measured_prediction_actual_and_evaluation_flow(tmp_path, monkeypatch):
     )
     assert evaluation.status_code == 200
     assert set(evaluation.json()["comparison"]) == set(MODEL_B_TARGETS)
+
+
+def test_experimental_prediction_requires_api_key(monkeypatch):
+    monkeypatch.setattr(main, "API_KEY", "test-key")
+    response = client.post(
+        "/v1/predict/carcass-cuts/experimental",
+        json={"hayvan_turu": "kuzu", "karkas_agirligi_kg": 18.2},
+    )
+    assert response.status_code == 401
+
+
+def test_production_endpoint_still_fails_closed_when_candidate_is_present(monkeypatch):
+    real_model_dir = Path(__file__).resolve().parents[1] / "models"
+    monkeypatch.setattr(main, "MODEL_B_DIR", real_model_dir)
+    monkeypatch.setattr(main, "API_KEY", "test-key")
+    headers = {"x-api-key": "test-key"}
+
+    # Production endpoint must strictly fail closed (503)
+    response = client.post(
+        "/v1/predict/carcass-cuts",
+        json={"hayvan_turu": "kuzu", "karkas_agirligi_kg": 20.0},
+        headers=headers,
+    )
+    assert response.status_code == 503
+    assert "üretim artefaktı" in response.json()["detail"]
+
+
+def test_experimental_prediction_with_real_candidate_model(tmp_path, monkeypatch):
+    real_model_dir = Path(__file__).resolve().parents[1] / "models"
+    monkeypatch.setattr(main, "MODEL_B_DIR", real_model_dir)
+    monkeypatch.setattr(main, "MODEL_B_AUDIT_DB", tmp_path / "audit.sqlite3")
+    monkeypatch.setattr(main, "API_KEY", "test-key")
+    headers = {"x-api-key": "test-key"}
+
+    response = client.post(
+        "/v1/predict/carcass-cuts/experimental",
+        json={"hayvan_turu": "dana", "karkas_agirligi_kg": 250.0},
+        headers=headers,
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["experimental"] is True
+    assert body["production_ready"] is False
+    assert body["source_type"] == "synthetic"
+    assert set(body["predicted_cuts_kg"]) == set(MODEL_B_TARGETS)
+    for cut, kg in body["predicted_cuts_kg"].items():
+        assert isinstance(kg, (int, float))
+        assert kg >= 0.0
+    assert "DENEYSEL PİLOT TAHMİNİ" in body["model_notice"]
+
+
+def test_experimental_prediction_rejects_hash_mismatch(tmp_path, monkeypatch):
+    _write_candidate_bundle(tmp_path, artifact_hash="0" * 64)
+    monkeypatch.setattr(main, "MODEL_B_DIR", tmp_path)
+    monkeypatch.setattr(main, "API_KEY", "test-key")
+    monkeypatch.setattr(artifact.joblib, "load", lambda *_: pytest.fail("invalid hash must be rejected first"))
+    response = client.post(
+        "/v1/predict/carcass-cuts/experimental",
+        json={"hayvan_turu": "kuzu", "karkas_agirligi_kg": 18.2},
+        headers={"x-api-key": "test-key"},
+    )
+    assert response.status_code == 503
+
+
+def test_experimental_prediction_returns_503_when_no_candidate(tmp_path, monkeypatch):
+    empty_dir = tmp_path / "empty"
+    empty_dir.mkdir()
+    monkeypatch.setattr(main, "MODEL_B_DIR", empty_dir)
+    monkeypatch.setattr(main, "API_KEY", "test-key")
+    response = client.post(
+        "/v1/predict/carcass-cuts/experimental",
+        json={"hayvan_turu": "kuzu", "karkas_agirligi_kg": 18.2},
+        headers={"x-api-key": "test-key"},
+    )
+    assert response.status_code == 503
+
+
+def test_experimental_prediction_actual_and_evaluation_flow(tmp_path, monkeypatch):
+    _write_candidate_bundle(tmp_path)
+    monkeypatch.setattr(main, "MODEL_B_DIR", tmp_path)
+    monkeypatch.setattr(main, "MODEL_B_AUDIT_DB", tmp_path / "audit.sqlite3")
+    monkeypatch.setattr(main, "API_KEY", "test-key")
+    headers = {"x-api-key": "test-key"}
+
+    prediction = client.post(
+        "/v1/predict/carcass-cuts/experimental",
+        json={"hayvan_turu": "kuzu", "karkas_agirligi_kg": 18.2},
+        headers=headers,
+    )
+    assert prediction.status_code == 200
+    prediction_body = prediction.json()
+    assert prediction_body["experimental"] is True
+    assert prediction_body["production_ready"] is False
+    assert prediction_body["source_type"] == "synthetic"
+    assert set(prediction_body["predicted_cuts_kg"]) == set(MODEL_B_TARGETS)
+
+    actual_body = {
+        "prediction_id": prediction_body["prediction_id"],
+        "measured_at_utc": "2026-01-01T08:00:00+00:00",
+        "actual_cuts_kg": {target: float(index) for index, target in enumerate(MODEL_B_TARGETS, start=1)},
+    }
+    actual = client.post("/v1/actual/carcass-cuts", json=actual_body, headers=headers)
+    assert actual.status_code == 200
+    assert actual.json()["actual_source_type"] == "measured"
+
+    evaluation = client.get(
+        f"/v1/evaluate/carcass-cuts/{prediction_body['prediction_id']}",
+        headers=headers,
+    )
+    assert evaluation.status_code == 200
+    eval_body = evaluation.json()
+    assert eval_body["source_type"] == "synthetic"
+    assert eval_body["is_experimental"] is True
+    assert set(eval_body["comparison"]) == set(MODEL_B_TARGETS)

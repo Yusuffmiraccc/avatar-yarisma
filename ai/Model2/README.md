@@ -93,3 +93,44 @@ Gönderim `POST /v1/actual/carcass-cuts` ile yapılır. Kayıtlı comparison iç
 Model2 Compose yapılandırması ai/Model2/docker-compose.yml içindedir. Model2 dizininden docker compose config --quiet ile doğrulayın; imajı docker compose build model2-api ile derleyin ve API_KEY güvenli ortamda ayarlandıktan sonra docker compose up -d model2-api ile yalnız Model2 servisini çalıştırın. Servis 127.0.0.1:8002 üzerinde ve avatar-model2-api container adıyla dinler. Üretim artefaktı yokken status üretime hazır olmadığını, prediction endpointi ise 503 durumunu bildirir.
 
 Kanıta dayalı yarışma özeti, testteki baseline/Ridge/Random Forest metrikleri, veri kökeni, lot geri çağırma sınırları ve kalan doğrulama koşulları `reports/competition_report.md` içindedir. Gerçek saha doğrulaması yapılmadı.
+
+---
+
+## 2026-11-01 MLOps & Çift Katmanlı Backend Entegrasyonu
+
+### 1. Mimari ve Konumlandırma
+- **Mikroservis Dağıtımı:** `ai/Model2/` (Kendi Dockerfile ve `docker-compose.yml` dosyasıyla 8002 portunda çalışan bağımsız mikroservis).
+- **Backend Entegre Dağıtımı:** `backend/app/ml/` (Ana backend üzerinden `POST /api/v1/ai/butchering-output/predict` port 8000).
+- **Audit Veritabanı:** `model2_audit_data` volume'u altındaki SQLite deposunda tahminler, gerçekleşen ölçümler ve değerlendirmeler saklanır.
+- **Fail-Closed Güvenlik Kuralı:** `models/model_b_production.joblib` ve doğrulanmış `model_b_production.manifest.json` (`source_type=measured`, `production_ready=true`, SHA-256 eşleşmesi) bulunmadığında tahmin uç noktası **HTTP 503** döner. Sentetik aday asla sahte üretim tahmini olarak sunulmaz.
+
+### 2. Eğitim ve Doğrulama Komutları
+- **Sentetik Aday Eğitimi:**
+  ```powershell
+  python -m ai.Model2.training.train_model_b
+  ```
+  *Çıktı:* `ai/Model2/models/model_b_synthetic_candidate.joblib` ve `model_b_synthetic_candidate.manifest.json`.
+- **Birim ve Entegrasyon Testleri:**
+  ```powershell
+  $env:PYTHONPATH="ai/Model2"
+  python -m pytest ai/Model2/tests/ -v
+  ```
+  *Sonuç:* 16 passed, 0 failed, 1 uyarı (Starlette deprecation).
+- **Docker İle Mikroservisi Başlatma:**
+  ```powershell
+  $env:API_KEY="your-secure-key"
+  docker compose -f ai/Model2/docker-compose.yml up -d
+  ```
+
+### 3. API Uç Noktaları ve Doğrulama
+- `GET /health`: Liveness kontrolü (`service="avatar-model2-api"`).
+- `GET /v1/models/status`: Model hazırlık durumunu açıkça raporlar (`model_b_production_ready: false`, `model_b_candidate_available: true`, `model_notice`).
+- `POST /v1/predict/carcass-cuts`: Üretim artefaktı yokken güvenli **HTTP 503** döner (Fail-closed prensibi).
+- `POST /v1/predict/carcass-cuts/experimental`: Sentetik aday modeli pilot ve test amaçlı çalıştırır. Yanıtta `experimental: true`, `production_ready: false`, `source_type: "synthetic"` ve yasal/ticari uyarı döner.
+- `POST /v1/actual/carcass-cuts`: Fiili tartım ölçümlerini kaydeder.
+- `GET /v1/evaluate/carcass-cuts/{prediction_id}`: Tahmin ile gerçekleşen tartımı 8 kategori bazında kıyaslar (`deviation_kg = predicted - actual`, `is_experimental: true/false`).
+
+### 4. Gerçek Üretim Durumu ve Şeffaflık
+- **Veri Kaynağı:** `data/raw/synthetic/` (1.200 simüle karkas: 400 kuzu, 400 koyun, 400 dana; 840 train / 180 validation / 180 test).
+- **Üretime Hazır Olma:** **ÜRETİME HAZIR DEĞİL (FAIL-CLOSED KORUNUYOR).** Gerçek saha ölçümleri (`data/raw/measured/`) sağlanana kadar model güvenli biçimde üretim dışı tutulmaktadır.
+
