@@ -35,7 +35,7 @@ def test_migration_matches_orm_metadata_and_roundtrips():
         with root.connect() as c:
             c.execute(sa.text(f"DROP DATABASE IF EXISTS {MIG_DB}"))
             c.execute(sa.text(f"CREATE DATABASE {MIG_DB} CHARACTER SET utf8mb4"))
-    except Exception as exc:
+    except sa.exc.SQLAlchemyError as exc:
         pytest.skip(f"MySQL root on {ROOT_URL} not reachable: {exc}")
 
     url = ROOT_URL.replace("/?", f"/{MIG_DB}?")

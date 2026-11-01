@@ -357,7 +357,7 @@ def test_unauthorized_price_tampering_is_rejected(db):
     db.add(ProductPrice(product_id=sucuk.id, price_type="SALE", amount=D("25.00"), currency_code="EUR", unit_code="PACK", valid_from=now))
     db.flush()
 
-    lot, bal = lots_svc.receive(
+    lot, _bal = lots_svc.receive(
         db, lot_code="SUC-SEC-001", product_id=sucuk.id, supplier_id=None,
         quantity=D(50), unit_code="PACK", unit_cost=D("18.16"), received_at=None,
         expiry_date=None, user_id=sales_rep.id, request_id="REQ-SEC-01"
@@ -454,13 +454,13 @@ def test_reference_scenario_full_traceability_and_multi_market_recall(db):
     db.flush()
 
     # 1. Hammadde Alış Girişleri
-    lot_et, bal_et = lots_svc.receive(db, lot_code="ET-2026-001-REF", product_id=et.id, supplier_id=sup.id,
+    lot_et, _bal_et = lots_svc.receive(db, lot_code="ET-2026-001-REF", product_id=et.id, supplier_id=sup.id,
                                       quantity=D(100), unit_code="KG", unit_cost=D("9.70"),
                                       received_at=None, expiry_date=None, user_id=user.id, request_id="R1")
-    lot_bah, bal_bah = lots_svc.receive(db, lot_code="BAH-2026-001-REF", product_id=bah.id, supplier_id=sup.id,
+    lot_bah, _bal_bah = lots_svc.receive(db, lot_code="BAH-2026-001-REF", product_id=bah.id, supplier_id=sup.id,
                                         quantity=D(2), unit_code="KG", unit_cost=D("24.00"),
                                         received_at=None, expiry_date=None, user_id=user.id, request_id="R2")
-    lot_bag, bal_bag = lots_svc.receive(db, lot_code="BAG-2026-001-REF", product_id=bag.id, supplier_id=sup.id,
+    lot_bag, _bal_bag = lots_svc.receive(db, lot_code="BAG-2026-001-REF", product_id=bag.id, supplier_id=sup.id,
                                         quantity=D(5), unit_code="KG", unit_cost=D("11.60"),
                                         received_at=None, expiry_date=None, user_id=user.id, request_id="R3")
     db.flush()
@@ -491,9 +491,9 @@ def test_reference_scenario_full_traceability_and_multi_market_recall(db):
     assert sucuk_bal.on_hand_quantity == D("85.0000")
 
     # 4. Satış ve Sevkiyatlar: Market A (30 pk), Market B (25 pk), Market C (30 pk) = 85 pk
-    sale_a = sales_svc.create_sale(db, SaleIn(customer_id=mkt_a.id, lines=[SaleLineIn(lot_id=sucuk_lot.id, quantity=D(30), unit_code="PACK")]), user=user, request_id="S-A")
-    sale_b = sales_svc.create_sale(db, SaleIn(customer_id=mkt_b.id, lines=[SaleLineIn(lot_id=sucuk_lot.id, quantity=D(25), unit_code="PACK")]), user=user, request_id="S-B")
-    sale_c = sales_svc.create_sale(db, SaleIn(customer_id=mkt_c.id, lines=[SaleLineIn(lot_id=sucuk_lot.id, quantity=D(30), unit_code="PACK")]), user=user, request_id="S-C")
+    sales_svc.create_sale(db, SaleIn(customer_id=mkt_a.id, lines=[SaleLineIn(lot_id=sucuk_lot.id, quantity=D(30), unit_code="PACK")]), user=user, request_id="S-A")
+    sales_svc.create_sale(db, SaleIn(customer_id=mkt_b.id, lines=[SaleLineIn(lot_id=sucuk_lot.id, quantity=D(25), unit_code="PACK")]), user=user, request_id="S-B")
+    sales_svc.create_sale(db, SaleIn(customer_id=mkt_c.id, lines=[SaleLineIn(lot_id=sucuk_lot.id, quantity=D(30), unit_code="PACK")]), user=user, request_id="S-C")
 
     db.refresh(sucuk_bal)
     assert sucuk_bal.on_hand_quantity == D("0.0000")

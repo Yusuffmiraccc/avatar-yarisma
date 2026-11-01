@@ -255,7 +255,6 @@ def test_ml_signing_key_is_independent_of_jwt_secret(tmp_path, monkeypatch):
 
     # Changing JWT secret must NOT invalidate ML signature verification
     settings = get_settings()
-    original_jwt = settings.jwt_secret_key
     monkeypatch.setattr(settings, "jwt_secret_key", SecretStr("completely-different-jwt-key-9999999999"))
     assert modeling.load(str(path)) == artifact, "JWT secret rotation incorrectly broke ML artifact verification!"
 

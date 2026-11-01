@@ -47,7 +47,7 @@ Sistem **deny-by-default (varsayılan olarak engelle)** prensibiyle çalışır.
 
 - Giriş denemeleri IP adresi ve `IP + E-posta` çifti bazında bağımsız sayaçlarla sınırlandırılır.
 - Limitler: E-posta başına 10 başarısız deneme / 15 dakika; IP başına 50 deneme / 15 dakika.
-- Atomik Redis Lua betikleri ile kontrol edilir. Redis bağlantısı sağlanamadığında, tekil demo ortamları için süreç belleği (`threading.Lock` ile korunan in-memory dict) devreye girer.
+- Atomik Redis Lua betikleri ile kontrol edilir. Redis bağlantısı sağlanamadığında giriş isteği kapalı başarısız olur (`503 SERVICE_UNAVAILABLE`); sınırlama sessizce devre dışı kalmaz. Süreç belleği yalnızca `REDIS_URL` açıkça `memory://` verilirse kullanılır (yalnızca test içindir).
 - Limit aşıldığında `429 RATE_LIMITED` döner.
 
 ---
@@ -77,7 +77,7 @@ Sistem **deny-by-default (varsayılan olarak engelle)** prensibiyle çalışır.
    - Üretim ortamında veritabanı portu yalnızca backend konteyneriyle paylaşılır.
 
 2. **Düz Metin HTTP (Cleartext) Kısıtı:**
-   - Android uygulamasında `network_security_config.xml` ile cleartext HTTP izni yalnızca debug derlemesinde yerel adreslerle (`10.0.2.2`, `localhost`) sınırlandırılmıştır.
+   - Android uygulamasında `network_security_config.xml` ile cleartext HTTP izni yalnızca debug kaynak setinde (`src/debug/res/xml/network_security_config.xml`) açıktır; emülatör ve yerel ağdaki API için gereklidir. Ana yapılandırma cleartext'i ve kullanıcı sertifikalarını reddeder.
    - Release derlemesinde güvensiz HTTP trafiği tamamen engellenmiştir.
 
 3. **CORS:**
