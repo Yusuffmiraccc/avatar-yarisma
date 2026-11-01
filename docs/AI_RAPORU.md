@@ -144,3 +144,22 @@ Not: PDF'teki kuzu örneğinde (PRC-2026-001) yalnızca üç parça kayıtlıdı
 - **Dış Faktörler:** Hayvan ırkı, yaş, mevsimsel beslenme, karkas yağ oranı gibi çevresel değişkenler sentetik veri setinde yer almadığı için modele dâhil edilmemiştir.
 - **Güven Aralığı:** Tahmin aralıkları normal hata dağılımı varsayımına dayanır; uç koşullarda kapsama sapması oluşabilir.
 - **İzlenebilirlik ve Geri Çağırma Bağımsızlığı:** AI tahminleri hiçbir koşulda gerçek stok, lot ve geri çağırma blokajlarının yerine geçmez. Lot blokajı (`LOT_BLOCKED`, HTTP 409) deterministik güvenlik kuralıdır.
+
+## 8. Resmî AI hattı ve ek araştırma (`ai/Model1`, `ai/Model2`)
+
+**Resmî hat:** Yarışmanın AI-A (üretim verimi / EKP) ve AI-B (parçalama çıktısı) modelleri `backend/app/ml` içindedir. Bu modeller backend'e entegredir (`/api/v1/ai/*`); eğitim, baseline karşılaştırması, imzalı model saklama (HMAC) ve anomali uyarıları bu hatta yapılır. Bu raporun 1–7. bölümleri yalnızca bu hattı anlatır.
+
+**Ek araştırma (ürüne bağlı değil):** `ai/Model1` (sucuk üretim, TL) ve `ai/Model2` (Model B parçalama) bağımsız FastAPI servisleridir. `backend/`, `web/` ve `android/` bu servisleri çağırmaz; ürün akışında kullanılmazlar. Aşağıdaki sayılar 31.10.2026'da temiz bir ortamda eğitim ve test koşularak ölçülmüştür.
+
+| Hat | Hedef | Sonuç (test) | Baseline'a göre |
+|---|---|---|---|
+| `ai/Model1` verim | Net sucuk çıktısı (kg) | MAE 12,17 · R² 0,971 | %85,4 iyileşme |
+| `ai/Model1` EKP | EKP (TL/kg) | MAE 49,87 · R² 0,107 | %3,49 iyileşme; servis "üretime hazır değil" der |
+| `ai/Model2` Model B | 8 karkas çıktısı (kg) | Ridge 1,0079 · Random Forest 1,0523 (baseline = 1,0000, normalize MAE oranı) | Hiçbir ML adayı baseline'ı geçemedi; aday `production_ready=false`, tahmin uç noktası 503 döner |
+
+Notlar:
+- Üç hat da sentetik/simüle veriyle çalışır. Metrikler gerçek işletme başarısı değildir.
+- Model1 verim modelinin yüksek skoru, çıktının girdilerden büyük ölçüde hesaplanabilir olmasından gelir (sentetik formül); EKP modeli baseline'ı güçlükle geçer.
+- Para birimi farkı: `backend/app/ml` € ile, `ai/Model1` TL ile çalışır. Sayılar birbiriyle karşılaştırılamaz.
+- Model1 `models/` klasörü boştur (`.joblib` dosyaları `.gitignore`'dadır); servis, eğitimden sonra aday dosyalar elle `yield_model.joblib` ve `ekp_model.joblib` adına terfi ettirilince çalışır. Taze klonda iki Model1 testi bu yüzden düşer.
+- Model B adayı, README'sinde belirtildiği gibi yalnızca saha doğrulamasından sonra üretime alınabilir.
