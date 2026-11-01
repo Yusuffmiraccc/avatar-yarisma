@@ -1,161 +1,397 @@
-# AVATAR — Bütünleşik Üretim, Gerçek Maliyet (EKP), Satış ve Lot İzlenebilirliği Sistemi
+# AVATAR — Üretim, Gerçek Maliyet (EKP), Satış ve Lot İzlenebilirliği
 
-[![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688.svg)](https://fastapi.tiangolo.com)
-[![React](https://img.shields.io/badge/Web-React%2019%20%7C%20TypeScript-61DAFB.svg)](https://react.dev)
-[![Kotlin](https://img.shields.io/badge/Android-Kotlin%20%7C%20Compose-7F52FF.svg)](https://kotlinlang.org)
-[![MySQL](https://img.shields.io/badge/Database-MySQL%208.4%20%7C%20Room%20SQLite-4479A1.svg)](https://www.mysql.com)
-[![scikit-learn](https://img.shields.io/badge/ML-scikit--learn-F7931E.svg)](https://scikit-learn.org)
+AVATAR, et ve et ürünleri üretim süreçlerini; hammadde takibi, fason üretim, gerçek birim maliyet (EKP) hesaplama, karkas parçalama, stok ve satış yönetimi, lot izlenebilirliği ve geri çağırma işlemleri üzerinden dijitalleştirmeyi amaçlayan bir yazılım projesidir.
 
-Bu proje, **AVATAR Yapay Zekâ Yarışması Değerlendirme Belgesi (`AVATAR_Assessment.pdf`)** temel gereksinimlerini eksiksiz karşılayan; hammadde kabulünden dış fason üretime, gerçek birim maliyet (EKP) hesabından kuzu parçalamaya, çok kademeli lot şeceresinden geri çağırma (recall) yönetimine, Kotlin Android çevrimdışı satış uygulamasından makine öğrenmesi tahmin modellerine kadar birbiriyle tam entegre bir kurumsal üretim ve izlenebilirlik yazılımıdır.
+Proje; web yönetim paneli, REST API, MySQL veritabanı, Android satış uygulaması ve makine öğrenmesi bileşenlerinden oluşur.
 
----
-
-## 1. Mimari Bileşenler ve Tamamlanma Durumu
-
-| Modül | Teknoloji | Konum | Durum |
-|---|---|---|---|
-| **Backend & REST API** | Python, FastAPI, SQLAlchemy 2, Alembic, MySQL 8.4, Redis | `backend/` | **Çalışıyor & Test Edildi** (Sözleşme korundu, SQLite fallback ve süreç içi rate-limit eklendi) |
-| **API Sözleşmesi** | OpenAPI 3.1 Sözleşmesi | `contract/openapi.json` | **Güncel & Birebir Uyumlu** |
-| **Web Yönetim Paneli** | React 19, TypeScript, Vite, Tailwind CSS | `web/` | **Çalışıyor & Test Edildi** (11/11 birim test geçti, 0 hata prodüksiyon derlemesi) |
-| **Android Mobil Uygulama** | Kotlin 2.1, Jetpack Compose, Material 3, Room (SQLite), Retrofit, WorkManager | `android/` | **Tam Kodlandı & Testleri Hazır** (Offline kuyruk, UUID Idempotency, Bloke lot engeli, `stock_movement_id` kaydı) |
-| **Yapay Zekâ (ML)** | Python, scikit-learn, pandas | `backend/app/ml/`, `ai/` | **Eğitildi & Değerlendirildi** (Model A: %37 iyileşme, Model B: %31 iyileşme, HMAC imzalı artefaktlar) |
-| **Merkezi Veritabanı** | MySQL 8.4 (Tek doğruluk kaynağı) | `database/` | **Tam Şema & Migration Hazır** |
+> [!NOTE]
+> **Proje durumu:** Bu doküman kurulum ve değerlendirme rehberidir. Özelliklerin üretime hazır olduğu veya bütün testlerin geçtiği varsayılmamalıdır. Doğrulanmış test sonuçları ve bilinen sınırlamalar ilgili bölümlerde belirtilmiştir.
 
 ---
 
-## 2. Hızlı Başlangıç (Windows & Docker)
-
-### 2.1 Demo Kullanıcı Girişleri
-Tüm kullanıcıların parolası: **`Avatar-Demo-2026!`**
-
-- **Yönetici:** `admin@avatar.demo` (Tüm modüller, ayarlar ve maliyetler)
-- **Operatör:** `operator@avatar.demo` (Üretim, parçalama ve stok operasyonları)
-- **Saha Satış:** `sales@avatar.demo` (Android satış uygulaması, liste fiyatıyla satış; maliyetler gizlidir)
-- **İzlenebilirlik:** `trace@avatar.demo` (İleri/geri lot takibi ve recall aktivasyonu)
-- **İzleyici:** `viewer@avatar.demo` (Salt okunur izleme; maliyetler gizlidir)
+## İçindekiler
+- [Proje Hedefleri](#proje-hedefleri)
+- [Teknoloji ve Mimari](#teknoloji-ve-mimari)
+- [Gereksinimler](#gereksinimler)
+- [Kurulum ve Çalıştırma](#kurulum-ve-çalıştırma)
+- [Demo Kullanıcıları](#demo-kullanıcıları)
+- [Yarışma Senaryoları](#yarışma-senaryoları)
+- [Yapay Zekâ Modelleri](#yapay-zekâ-modelleri)
+- [Android Uygulaması](#android-uygulaması)
+- [Testler ve Doğrulama](#testler-ve-doğrulama)
+- [API ve Teknik Dokümantasyon](#api-ve-teknik-dokümantasyon)
+- [Güvenlik ve Bilinen Sınırlamalar](#güvenlik-ve-bilinen-sınırlamalar)
+- [Katkı ve Geliştirme](#katkı-ve-geliştirme)
 
 ---
 
-### 2.2 Backend Servisini Başlatma
+## Proje Hedefleri
+AVATAR'ın hedefleri şunlardır:
+- Hammadde girişlerini ve üretim emirlerini izlemek.
+- Fason üretim maliyetlerini ve gerçek birim maliyeti hesaplamak.
+- Karkas parçalama sonucunda elde edilen ürünleri ve fireleri kaydetmek.
+- Üretim, stok, sevkiyat ve satış kayıtları arasında lot ilişkilerini korumak.
+- Kalite sorunu bulunan lotların etkilediği ürünleri ve sevkiyatları belirlemek.
+- Android uygulamasında satış işlemlerini desteklemek ve bağlantı kesintilerinde bekleyen işlemleri senkronize etmek.
+- Makine öğrenmesiyle üretim verimi, maliyet ve parçalama çıktıları hakkında karar desteği sağlamak.
 
-```powershell
-cd backend
-# 1. Ortam dosyasını hazırlayın
-Copy-Item .env.example .env
+---
 
-# 2. Docker ile MySQL veritabanını başlatın
-docker compose up -d mysql
+## Teknoloji ve Mimari
 
-# 3. Veritabanı migration'larını uygulayın
-alembic upgrade head
+| Bileşen | Teknoloji | Dizin |
+| :--- | :--- | :--- |
+| **Backend ve REST API** | Python, FastAPI, SQLAlchemy, Alembic | `backend/` |
+| **Web Yönetim Paneli** | React, TypeScript, Vite | `web/` |
+| **Android Uygulaması** | Kotlin, Jetpack Compose, Room, Retrofit, WorkManager | `android/` |
+| **Merkezi Veritabanı** | MySQL 8.4 | `database/` |
+| **API Sözleşmesi** | OpenAPI 3.1 | `contract/openapi.json` |
+| **Makine Öğrenmesi** | Python, scikit-learn, pandas | `backend/app/ml/`, `ai/` |
+| **Yerel Geliştirme Ortamı** | Docker Compose | `docker-compose.yml` |
 
-# 4. Tekrarlanabilir demo verilerini (ET-2026-001 senaryosu + sentetik geçmiş) yükleyin
-python -m scripts.seed_demo
+### Temel Mimari
+```text
+Web Yönetim Paneli ─────┐
+                        ├── REST API ─── MySQL (Merkezi Veri Kaynağı)
+Android Uygulaması ─────┘       │
+                                ├── Üretim ve maliyet işlemleri
+                                ├── Stok, satış ve lot izlenebilirliği
+                                └── Yapay zekâ tahmin servisleri
 
-# 5. API sunucusunu başlatın (http://localhost:8000/api/v1/docs)
-uvicorn app.main:app --reload --port 8000
+* Android Room / SQLite: Yerel katalog önbelleği ve bekleyen satış işlemleri
+```
+MySQL merkezi veri kaynağı olarak kullanılır. Android tarafındaki Room/SQLite veritabanı ise yerel veriler ve bekleyen işlemler için kullanılır.
+
+---
+
+## Gereksinimler
+- Git
+- Docker Desktop ve Docker Compose
+- Python 3.12+ ve proje bağımlılıkları (manuel backend kurulumu için)
+- Node.js 20+ ve pnpm / npm (web uygulamasını ayrı çalıştırmak için)
+- JDK 17 ve Android Gradle Wrapper (Android uygulaması için)
+
+> Sürümler ve bağımlılıklar için ilgili alt projelerin yapılandırma dosyaları (`pyproject.toml`, `package.json`, `build.gradle.kts`) esas alınmalıdır.
+
+---
+
+## Kurulum ve Çalıştırma
+
+### 1. Depoyu İndirme
+```bash
+git clone https://github.com/Yusuffmiraccc/avatar-yarisma.git
+cd avatar-yarisma
 ```
 
----
+### 2. Docker Compose ile Servisleri Başlatma
+Proje kök dizininde:
+```bash
+docker compose up --build -d
+docker compose ps
+```
 
-### 2.3 Web Yönetim Panelini Başlatma
+Servislerin durumunu kontrol etmek için:
+```bash
+docker compose logs --tail=100 api
+docker compose logs --tail=100 mysql
+docker compose logs --tail=100 web
+docker compose logs --tail=100 demo-seed
+```
 
+API sağlık kontrolü (PowerShell):
 ```powershell
-cd web
-# 1. Bağımlılıkları yükleyin
-pnpm install
+Invoke-WebRequest http://localhost:8000/health/ready
+```
+veya cURL:
+```bash
+curl http://localhost:8000/health/ready
+```
 
-# 2. Geliştirme sunucusunu başlatın (http://127.0.0.1:5173)
+Servisler hazır olduğunda kullanılabilecek adresler:
+
+| Servis | Adres |
+| :--- | :--- |
+| **Backend API** | `http://localhost:8000` |
+| **API Dokümantasyonu (Swagger)** | `http://localhost:8000/api/v1/docs` |
+| **Web Yönetim Paneli** | `http://localhost:5173` |
+
+> [!TIP]
+> API dokümantasyonu veya web paneli açılmıyorsa önce ilgili servisin `docker compose ps` ve log çıktıları kontrol edilmelidir.
+
+### 3. Demo Verileri
+Docker Compose yapılandırmasında `demo-seed` servisi, yerel ortamda `ENABLE_DEMO_SEED=true` olduğunda demo verilerini yüklemek üzere tanımlanmıştır.
+
+Demo verilerinin yüklenmesi ve kullanıcıların oluşturulması tamamlanmadan giriş bilgilerinin çalıştığı varsayılmamalıdır. Veri yükleme durumunu kontrol etmek için:
+```bash
+docker compose logs demo-seed
+```
+
+### 4. Web Uygulamasını Ayrı Çalıştırma
+Web uygulamasını Docker yerine geliştirme sunucusuyla çalıştırmak isterseniz:
+```bash
+cd web
+pnpm install
 pnpm dev
 ```
 
-Web panelinde çalıştırılabilir komutlar:
-```powershell
-pnpm test          # 11 birim ve bileşen testini çalıştırır
-pnpm run build     # TypeScript tip denetimi ve Vite prodüksiyon derlemesi yapar
+Test ve production build komutları:
+```bash
+pnpm test
+pnpm run build
 ```
+*(Alternatif olarak `npm ci`, `npm test` ve `npm run build` komutları da kullanılabilir).*
+
+### 5. Backend'i Ayrı Çalıştırma
+Backend'i Docker dışında çalıştırmak için:
+```powershell
+cd backend
+Copy-Item .env.example .env
+```
+Ardından Python sanal ortamını, bağımlılıkları (`pip install -e ".[dev]"`) ve gerekli ortam değişkenlerini hazırlayın. Veritabanı hazır olduktan sonra:
+```bash
+alembic upgrade head
+python -m scripts.seed_demo
+uvicorn app.main:app --reload --port 8000
+```
+> [!CAUTION]
+> Bu yöntem Docker Compose ile aynı servisleri eş zamanlı başlatmak için kullanılmamalıdır; port ve veritabanı ayarlarının çakışmadığından emin olun.
 
 ---
 
-### 2.4 Android Mobil Satış Uygulamasını Başlatma
+## Demo Kullanıcıları
 
+Projede tanımlı demo rollerinin amaçları:
+
+| Rol | Amaç |
+| :--- | :--- |
+| **Yönetici** | Genel yönetim ve yapılandırma |
+| **Operatör** | Üretim, parçalama ve stok işlemleri |
+| **Saha Satış** | Android satış uygulaması (maliyetler gizlidir) |
+| **İzlenebilirlik** | Lot takibi ve geri çağırma |
+| **İzleyici** | Salt okunur inceleme (maliyetler gizlidir) |
+
+Repo dokümantasyonunda tanımlanan demo hesapları:
+
+| Rol | Kullanıcı E-posta |
+| :--- | :--- |
+| **Yönetici** | `admin@avatar.demo` |
+| **Operatör** | `operator@avatar.demo` |
+| **Saha Satış** | `sales@avatar.demo` |
+| **İzlenebilirlik** | `trace@avatar.demo` |
+| **İzleyici** | `viewer@avatar.demo` |
+
+Belgelenen demo parolası: **`Avatar-Demo-2026!`**
+
+> [!WARNING]
+> Bu hesapların kullanılabilirliği demo seed işlemi ve mevcut yapılandırma üzerinden doğrulanmalıdır. Demo parolalarını gerçek veya internete açık üretim ortamlarında asla kullanmayın.
+
+---
+
+## Yarışma Senaryoları
+
+Aşağıdaki senaryolar değerlendirme sırasında adım adım gösterilmek üzere hazırlanmalıdır. Beklenen değerler, uygulamanın gerçek çıktısıyla karşılaştırılarak doğrulanmalıdır.
+
+### Senaryo 1 — Fason Üretim ve Gerçek Birim Maliyet (EKP)
+Amaç, üretimde tüketilen girdileri, hizmet maliyetini, elde edilen mamul miktarını ve birim maliyeti ilişkilendirmektir.
+
+**Temel Hesap:**
+$$\text{Toplam Maliyet} = \text{Hammadde Maliyeti} + \text{Hizmet Bedeli} + \text{Ek Maliyetler}$$
+
+$$\text{EKP} = \frac{\text{Toplam Maliyet}}{\text{Sağlam Mamul Miktarı}}$$
+
+**Örnek Senaryo Değerleri:**
+
+| Kalem | Tutar |
+| :--- | :--- |
+| Et | 970,00 € |
+| Baharat | 48,00 € |
+| Bağırsak | 58,00 € |
+| Fason Hizmet | 467,50 € |
+| **Toplam Maliyet** | **1.543,50 €** |
+| Sağlam Mamul | 85 paket |
+| **Birim EKP** | **18,16 €/paket** |
+
+**Hesaplama Detayı:**
+$$\frac{1.543,50}{85} = 18,1588\ldots \approx 18,16\text{ €/paket}$$
+
+> **Doğrulama:** Üretim emrini, tüketilen malzemeleri, hizmet faturasını, mamul miktarını ve sistemin hesapladığı EKP değerini ekranda gösterin. Bu örnek değerlerin uygulama tarafından gerçekten üretildiği backend testleriyle doğrulanmıştır (`test_costing.py`, `test_standalone_flows.py`).
+
+---
+
+### Senaryo 2 — Bütün Kuzu Parçalama
+Amaç, bir karkasın giriş ağırlığı ve maliyetinden elde edilen parça ürünleri, fireyi ve maliyet dağılımını takip etmektir.
+
+**Demo Dokümanındaki Örnek Değerler:**
+- Giriş ağırlığı: **25 kg**
+- Fatura tutarı: **351,00 €**
+- Beyan edilen birim fiyat: **11,50 €/kg**
+- Parça toplamı: **22 kg**
+
+**Bu değerler arasında bilerek bırakılmış tutarsızlık vardır:**
+$$25 \times 11,50 = 287,50\text{ €} \neq 351,00\text{ €}$$
+
+Bu sonuç 351,00 € fatura tutarına eşit değildir. Ayrıca 25 kg giriş ile 22 kg parça toplamı arasındaki 3 kg farkın fire veya yan ürün olup olmadığı sistem tarafından açıklanmalıdır.
+
+> **Doğrulama:** Sistemin bu tutarsızlıkları görünür kıldığını (`weight_variance_records` ve uyarı mekanizması), parça ağırlıklarını ve maliyet dağıtımını (`BY_WEIGHT`) kuruşu kuruşuna nasıl kaydettiğini gösterin. Kaynağı doğrulanmamış değerleri sessizce düzeltmeyin.
+
+---
+
+### Senaryo 3 — Lot İzlenebilirliği ve Geri Çağırma (Recall)
+Amaç, kalite sorunu bulunan bir hammadde lotundan etkilenen üretim, mamul ve sevkiyat kayıtlarını bulmaktır.
+
+**Demo Dokümanında Belirtilen Örnek İlişki:**
+```text
+ET-2026-001 (Hammadde Lotu)
+       │
+       ▼
+URT-2026-045 (Üretim Emri)
+       │
+       ▼
+SUC-2026-045 (Mamul Lotu)
+       ├──> Market A: 30 paket
+       ├──> Market B: 25 paket
+       └──> Market C: 30 paket
+(Toplam Sevkiyat Miktarı: 85 paket)
+```
+
+**Gösterilecek Adımlar:**
+1. Hammadde lotunu (`ET-2026-001`) bulun.
+2. Lotla ilişkili üretim emrini (`URT-2026-045`) ve mamul lotunu (`SUC-2026-045`) görüntüleyin.
+3. Sevkiyatları ve müşterileri (Market A, B, C) belirleyin.
+4. Geri çağırma işlemini etkinleştirin (`RCL-2026-001`).
+5. Bloke edilen lotun satışa kapatıldığını doğrulayın.
+6. Hem Android arayüzünde hem de sunucu tarafında bloke lot korumasını test edin.
+
+> [!IMPORTANT]
+> Geri çağırma koruması yalnızca istemci arayüzüne dayanmamalıdır; sunucu da geçersiz ve bloke satışları `409 LOT_BLOCKED` statüsüyle reddetmelidir.
+
+---
+
+## Yapay Zekâ Modelleri
+
+Projede iki farklı tahmin problemi ele alınmaktadır:
+
+### Model 1 — Üretim Verimi ve EKP
+- **Amaç:** Üretim girdilerinden beklenen mamul miktarı ve birim maliyet hakkında karar desteği sağlamak.
+- **Kod Alanı:** `backend/app/ml/` ve `ai/Model1/`
+- **Veri:** Repo dokümantasyonunda 1.000 satırlık simüle üretim verisi (`sucuk_uretim_1000_simule_parti.csv`).
+- **Sınırlama:** Simüle verideki performans, gerçek fabrikadaki performansın kanıtı değildir. Karar desteği sunar; muhasebe EKP yerine geçmez.
+
+### Model 2 — Karkas Parçalama
+- **Amaç:** Hayvan türü ve karkas ağırlığı gibi girdilerden parçalama çıktılarını tahmin etmek.
+- **Kod Alanı:** `ai/Model2/`
+- **Veri:** Dokümantasyonda 1.200 satırlık sentetik veri (`ModelB_*_sentetik.csv`).
+- **Sınırlama:** Gerçek saha ölçümleriyle doğrulanmış üretim artefaktı bulunmadığında sistemin güvenli biçimde tahmin vermeyi reddetmesi (`HTTP 503 Fail-Closed`) korunmalıdır.
+
+### Model Değerlendirme İlkeleri
+Model raporlarında şu bilgiler ayrı ayrı sunulmalıdır:
+1. Eğitim, doğrulama ve test veri kümelerinin nasıl ayrıldığı.
+2. Verinin gerçek mi sentetik mi olduğu.
+3. Kullanılan algoritmalar ve değerlendirme metrikleri.
+4. Test kümesinde ölçülen hata değerleri.
+5. Gerçek saha verisiyle doğrulama durumu.
+6. Modelin üretimde kullanılmasına ilişkin bilinen sınırlamalar.
+
+> [!NOTE]
+> Tahmin edilen EKP, muhasebe sisteminin gerçek maliyet hesabının yerine geçmez. Model tahmini ile fiilî gerçekleşen sonuçlar ayrı tutulmalıdır.
+
+---
+
+## Android Uygulaması
+
+Android uygulaması `android/` dizininde bulunur ve Kotlin, Jetpack Compose, Room/SQLite ve Retrofit teknolojilerini kullanır.
+
+### Derleme ve Test (Windows PowerShell)
 ```powershell
 cd android
-
-# 1. Emülatör veya USB bağlı cihaz için derleme
-./gradlew :app:assembleDebug
-
-# 2. Birim testlerini çalıştırma (BigDecimal, Validator, Idempotency)
-./gradlew :app:testDebugUnitTest
-
-# 3. Cihaza yükleme
-./gradlew :app:installDebug
-
-# Fiziksel cihaz kullanılıyorsa port yönlendirmesi:
-adb reverse tcp:8000 tcp:8000
+.\gradlew.bat :app:assembleDebug
+.\gradlew.bat :app:testDebugUnitTest
 ```
 
----
+Başarılı debug APK dosyasının beklenen yolu:
+`android/app/build/outputs/apk/debug/app-debug.apk` *(Ayrıca `artifacts/AVATAR-Yarisma.apk` altında mevcuttur).*
 
-## 3. Temel İş Mantığı ve Değerlendirme Senaryoları
+### Gerçek Telefonda Bağlantı
+1. Backend'in bilgisayarda çalıştığını doğrulayın (`http://localhost:8000/health/ready`).
+2. Telefonu ve bilgisayarı aynı Wi-Fi ağına bağlayın.
+3. Android uygulamasındaki sunucu adresi ayarını açın.
+4. Bilgisayarın yerel IP adresini kullanarak API adresini girin:
+   ```text
+   http://192.168.1.7:8000/api/v1/
+   ```
+   *(Not: `192.168.1.7` örnek geliştirme ortamına aittir; başka bir ağda bilgisayarın güncel IPv4 adresi kullanılmalıdır).*
+5. **Android Emülatörü için:**
+   ```text
+   http://10.0.2.2:8000/api/v1/
+   ```
+6. **USB Bağlantısında (ADB Reverse):**
+   ```powershell
+   adb reverse tcp:8000 tcp:8000
+   ```
+   Ardından uygulamada:
+   ```text
+   http://localhost:8000/api/v1/
+   ```
 
-### 3.1 Dış Hizmetle Üretim ve Gerçek Maliyet (EKP)
-- **Referans Formülü:**
-  $$\text{Toplam Maliyet} = \text{Tüketilen Hammadde Maliyeti} + \text{Dış Hizmet Faturası} + \text{Ek Maliyetler}$$
-  $$\text{Gerçek EKP} = \frac{\text{Toplam Maliyet}}{\text{Sağlam Mamul Miktarı}}$$
-- **Demo Doğrulaması:**
-  - 100 kg et (970 €) + 2 kg baharat (48 €) + 5 kg bağırsak (58 €) = 1.076,00 € hammadde
-  - 85 paket × 5,50 € = 467,50 € dış hizmet faturası
-  - Toplam Maliyet: **1.543,50 €**
-  - Üretim: **85 paket** `SUC-2026-045`
-  - EKP: $\frac{1.543,50}{85} = 18,1588... \longrightarrow \mathbf{18,16\text{ €/paket}}$.
-
-### 3.2 Bütün Kuzu Parçalama ve Tutarsızlık Tespiti
-- 25 kg kuzu alımı, fatura 351,00 €, beyan birim fiyat 11,50 €/kg.
-- PDF belgesindeki tutarsızlık ($25 \times 11,50 = 287,50 \neq 351,00$ ve parça toplamı 22 kg) sessizce düzeltilmez; sistem açık uyarı ve `weight_variance_records` oluşturur.
-- Maliyetler `BY_WEIGHT` yöntemiyle kuruşu kuruşuna dağıtılır; artık pay son satıra aktarılır.
-
-### 3.3 Lot İzlenebilirliği ve Geri Çağırma (Recall)
-- `ET-2026-001` hammadde lotunda kalite sorunu tespit edildiğinde `RCL-2026-001` aktive edilir.
-- Sistem hammadde $\rightarrow$ üretim emri (`URT-2026-045`) $\rightarrow$ mamul lotu (`SUC-2026-045`) $\rightarrow$ sevkiyatlar (Market A: 30, Market B: 25, Market C: 30 paket) ilişkisini anında tespit eder.
-- Mamul lotu kilitlenir; Android satış uygulamasında bloke lotun satışı engellenir; eski önbellekle gönderilen satışlar da backend tarafından `409 LOT_BLOCKED` ile reddedilir.
-
-### 3.4 Android SQLite ↔ MySQL Senkronizasyonu ve Idempotency
-- MySQL tek doğruluk kaynağı; Android Room yerel önbellek ve çevrimdışı kuyruktur.
-- Satış onayında yerel `client_uuid` üretilir; `Idempotency-Key` olarak sunucuya iletilir; ağ kesintilerinde mükerrer satış oluşmaz.
-- Satış satırında lot, miktar, sabit liste fiyatı ve sunucudan dönen `stock_movement_id` kalıcı olarak saklanır.
-
-### 3.5 Makine Öğrenmesi (Model 1 & Model 2) ve MLOps Entegrasyonu
-
-Sistem iki adet zorunlu makine öğrenmesi modeline sahiptir:
-- **Model 1 (Üretim Verimi ve EKP):** Üretim emrinde kullanılacak hammadde kütleleri ve maliyet bileşenlerinden çıktı paket miktarını ve birim EKP'yi tahmin eder.
-- **Model 2 (Karkas Parçalama):** Hayvan türü ve karkas ağırlığından parçalama çıktılarını (8 kategori) tahmin eder.
-
-| Alan | Model 1 (Üretim Verimi & EKP) | Model 2 (Karkas Parçalama) |
-|---|---|---|
-| **Eğitim Pipeline'ı** | `ai/Model1/training/train_production.py` & `backend/app/ml/service.py:train_all` (Gradient Boosting, 5-Fold CV) | `ai/Model2/training/train_model_b.py` (Ridge / Random Forest, Stratified Split) |
-| **Veri Kaynağı** | `sucuk_uretim_1000_simule_parti.csv` (1.000 simüle parti) | `ModelB_*_sentetik.csv` (1.200 simüle karkas: 840 train / 180 val / 180 test) |
-| **Artefakt Konumu** | `backend/ml_artifacts/production_yield.joblib` & Docker `avatar_ml:/srv/ml_artifacts/` | `ai/Model2/models/model_b_synthetic_candidate.joblib` (Aday) & `backend/ml_artifacts/butchering_output.joblib` |
-| **Artefakt Yükleme** | `modeling.load()` (HMAC SHA-256 `.sig` doğrulaması ile tam korumalı) | `model_b_artifact.py` (SHA-256 hash doğrulamalı) |
-| **Backend Bağlantısı** | `backend/app/api/v1/ai.py` (Port 8000, tam entegre) | `ai/Model2/app/main.py` (Port 8002 mikroservis) ve `backend/app/api/v1/ai.py` (Port 8000 entegre) |
-| **Tahmin Uç Noktası** | `POST /api/v1/ai/production-yield/predict` (HTTP 200, canlı çalışıyor) | `POST /v1/predict/carcass-cuts` (Üretim artefaktı yokken güvenli HTTP 503 fail-closed) |
-| **Üretime Hazır mı?** | **Karar Desteği Seviyesinde Hazır** (Sentetik sınırlılık notuyla karar desteği sağlar; muhasebe EKP yerine geçmez) | **Üretime Hazır Değil (Fail-Closed Korunuyor)** (Gerçek saha ölçümü `data/raw/measured/` gelene kadar 503 verir) |
-| **Kalan Eksikler** | Gerçek fabrika üretim ve arıza kayıtlarıyla modelin yeniden eğitilmesi | Gerçek kesimhane ölçüm kayıtlarının toplanarak saha modelinin devreye alınması |
-
+> [!CAUTION]
+> Yerel HTTP adresleri yalnızca kontrollü geliştirme ortamında kullanılmalıdır. Üretim ortamında HTTPS ve uygun güvenlik yapılandırması gereklidir.
 
 ---
 
-## 4. Dokümantasyon İndeksi (`docs/`)
+## Testler ve Doğrulama
 
-- [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md): Aşamalı uygulama planı ve durum analizi.
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): Katmanlı sistem mimarisi, veri akışları ve işlem sınırları.
-- [`docs/SENKRON.md`](docs/SENKRON.md): Android SQLite/Room ile MySQL senkronizasyon yaklaşımı.
-- [`docs/ML.md`](docs/ML.md): Model A ve Model B veri kaynakları, algoritmaları, metrikleri ve sınırları.
-- [`docs/AI_RAPORU.md`](docs/AI_RAPORU.md): Bilimsel ML deneyleri ve ölçülen çapraz doğrulama raporu.
-- [`docs/DEMO.md`](docs/DEMO.md): Yarışma jürisi için adım adım demo icra kılavuzu.
-- [`docs/TEST_REPORT.md`](docs/TEST_REPORT.md): Çalıştırılan testler, süreler ve gerçek çıktılar.
-- [`docs/SECURITY.md`](docs/SECURITY.md): Yetkilendirme matrisi, Argon2id, token rotation ve güvenlik politikaları.
-- [`docs/SOZLESME.md`](docs/SOZLESME.md): Mimari kararlar ve çelişki çözüm kuralları.
-- [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md): Veritabanı tabloları, ilişkiler ve bütünlük kısıtları.
-- [`docs/API.md`](docs/API.md): REST API uç noktaları ve istek/yanıt örnekleri.
-- [`docs/handoff/ACCEPTANCE_CRITERIA.md`](docs/handoff/ACCEPTANCE_CRITERIA.md): Kabul kriterlerinin tamamlanma durumu.
+Testleri çalıştırmak için ilgili alt projelerdeki komutları kullanın:
+
+| Alan | Komut | Doğrulanmış Durum |
+| :--- | :--- | :--- |
+| **Backend Test Paketi** | `cd backend && python -m pytest tests/ -v` | **116 passed, 2 skipped, 0 failed** |
+| **Web Birim Testleri** | `cd web && pnpm test` (veya `npm test`) | **11 passed (4 dosya)** |
+| **Web Production Build** | `cd web && pnpm run build` (veya `npm run build`) | **Başarılı (0 hata)** |
+| **Model 1 Test Paketi** | `python -m pytest ai/Model1/tests/ -q` | **83 passed** |
+| **Model 2 Test Paketi** | `python -m pytest ai/Model2/tests/ -q` | **16 passed** |
+| **Android Unit Testleri** | `cd android && .\gradlew.bat :app:testDebugUnitTest` | **Başarılı** |
+| **Android APK Derleme** | `cd android && .\gradlew.bat :app:assembleDebug` | **Başarılı (`app-debug.apk`)** |
+
+> [!NOTE]
+> Test sonuçları, gerçekten çalıştırılan komutların çıktısına göre raporlanmalıdır. GitHub Actions üzerinde başarısız olan bir iş, başarılı olarak işaretlenmemelidir.
+
+---
+
+## API ve Teknik Dokümantasyon
+
+| Belge | İçerik |
+| :--- | :--- |
+| [`contract/openapi.json`](contract/openapi.json) | API sözleşmesi |
+| [`docs/architecture.md`](docs/architecture.md) | Sistem mimarisi |
+| [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) | Veri modeli |
+| [`docs/API.md`](docs/API.md) | API uç noktaları |
+| [`docs/DEMO.md`](docs/DEMO.md) | Demo senaryoları |
+| [`docs/ML.md`](docs/ML.md) | Makine öğrenmesi dokümantasyonu |
+| [`docs/AI_RAPORU.md`](docs/AI_RAPORU.md) | Model deneyleri ve değerlendirmeleri |
+| [`docs/TEST_REPORT.md`](docs/TEST_REPORT.md) | Test sonuçları |
+| [`docs/SECURITY.md`](docs/SECURITY.md) | Güvenlik politikaları |
+| [`docs/SENKRON.md`](docs/SENKRON.md) | Android ve merkezi veritabanı senkronizasyonu |
+
+---
+
+## Güvenlik ve Bilinen Sınırlamalar
+- Demo hesapları yalnızca test amaçlıdır.
+- Gizli anahtarlar ve parolalar kaynak koduna veya Git geçmişine eklenmemelidir.
+- Gerçek saha verisiyle doğrulanmamış makine öğrenmesi modelleri üretime hazır kabul edilmemelidir.
+- Hammadde ve mamul izlenebilirliği, gerçek kayıt ilişkilerine dayanmalıdır.
+- Çevrimdışı satışlar senkronizasyon sırasında sunucu tarafında yeniden doğrulanmalıdır.
+- CI başarısızlıkları ve çalıştırılmamış testler açıkça raporlanmalıdır.
+- Yerel geliştirme yapılandırması doğrudan üretim ortamında kullanılmamalıdır.
+
+---
+
+## Katkı ve Geliştirme
+Değişiklik yapmadan önce ilgili modülün dokümantasyonunu ve testlerini inceleyin. Pull request göndermeden önce:
+1. Değişiklikleri gözden geçirin (`git diff`).
+2. Etkilenen testleri çalıştırın.
+3. Gizli bilgi ve hassas dosyaları kontrol edin.
+4. Test sonuçlarını ve bilinen sınırlamaları açıklayın.
+
+---
+**Proje:** AVATAR Yarışması  
+**Depo:** [https://github.com/Yusuffmiraccc/avatar-yarisma](https://github.com/Yusuffmiraccc/avatar-yarisma)
